@@ -109,7 +109,7 @@ class BaselineModel:
 
 
 if __name__ == '__main__':
-    model = BaselineModel(8)
+    model = BaselineModel(12)
 
     # training (counting track occurrences)
     start = time.time()
