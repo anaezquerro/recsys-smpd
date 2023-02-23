@@ -58,17 +58,16 @@ class Evaluator:
 
     def clicks(self):
         values = list()
-        for pid in list(self.golds.keys())[4:5]:
+        for j, pid in enumerate(self.golds.keys()):
             golds, preds = self.golds[pid], self.preds[pid]
-            print(golds)
 
             for i, track in enumerate(preds):
                 if track in golds:
-                    print(track)
+                    if j == 4:
+                        print(golds)
+                        print(track)
                     values.append(i//10)
                     break
-            break
-
         return values
 
 
