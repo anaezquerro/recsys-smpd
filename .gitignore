@@ -134,3 +134,4 @@ dmypy.json
 spotify*/
 sample_submission/*
 submissions/*
+.idea/*
