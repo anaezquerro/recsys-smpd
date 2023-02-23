@@ -71,7 +71,6 @@ class BaselineModel:
                         counter[track] += 1
                     except KeyError:
                         counter[track] = 1
-                    # self.csv_file.write(playlist['pid'] + ',' + track)
         return counter
 
 

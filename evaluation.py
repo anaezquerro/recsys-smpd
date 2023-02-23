@@ -9,7 +9,7 @@ class Evaluator:
     def __init__(self, predicted_file: str):
         self.predicted_file = predicted_file
 
-        self.golds = Reader(GOLD_FILE).read()
+        self.golds = Reader(GOLD_FILE, only_uri=True).read()
         self.preds = self.read_submission()
         self.relevants = {
             pid: np.array([track in self.golds[pid] for track in self.preds[pid]])
@@ -22,6 +22,7 @@ class Evaluator:
 
         # get lines, remove empty break lines and strip
         raw_lines = list(map(lambda x: x.strip(), re.split('\n+', raw_data)))
+        raw_lines = list(filter(lambda x: len(x) > 0, raw_lines))
 
         # remove comments and info row
         raw_lines = list(filter(lambda x: x[0] != '#', raw_lines))[1:]
@@ -50,31 +51,29 @@ class Evaluator:
             golds, preds, relevants = self.golds[pid], self.preds[pid], self.relevants[pid]
 
             dcg = relevants[0] + (relevants[1:]/np.log2(np.arange(2, len(relevants) + 1))).sum()
-            idcg = 1 + (1/np.log2(np.arange(2, relevants.sum())))
+            idcg = 1 + (1/np.log2(np.arange(2, len(golds)))).sum()
 
             values.append(dcg/idcg)
         return np.mean(values)
 
-    
+    def clicks(self):
+        values = list()
+        for pid in list(self.golds.keys())[4:5]:
+            golds, preds = self.golds[pid], self.preds[pid]
+            print(golds)
 
-            
-            
-            
+            for i, track in enumerate(preds):
+                if track in golds:
+                    print(track)
+                    values.append(i//10)
+                    break
+            break
 
-
-
-
-
-
-
-
-
-
-
+        return values
 
 
 
-
-
-
-
+if __name__ == '__main__':
+    evaluator = Evaluator('submissions/baseline.csv.gz')
+    preds = evaluator.read_submission()
+    print(evaluator.clicks())
