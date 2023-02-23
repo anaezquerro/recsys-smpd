@@ -60,15 +60,18 @@ class Evaluator:
         values = list()
         for j, pid in enumerate(self.golds.keys()):
             golds, preds = self.golds[pid], self.preds[pid]
+            clicked = False
 
             for i, track in enumerate(preds):
                 if track in golds:
-                    if j == 4:
-                        print(golds)
-                        print(track)
                     values.append(i//10)
+                    clicked = True
                     break
-        return values
+            if not clicked:
+                values.append(50)
+
+
+        return np.mean(values)
 
 
 
