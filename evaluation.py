@@ -11,6 +11,7 @@ class Evaluator:
 
         self.golds = Reader(GOLD_FILE, only_uri=True).read()
         self.preds = self.read_submission()
+
         self.relevants = {
             pid: np.array([track in self.golds[pid] for track in self.preds[pid]])
                   for pid in self.golds.keys()
@@ -51,7 +52,7 @@ class Evaluator:
             golds, preds, relevants = self.golds[pid], self.preds[pid], self.relevants[pid]
 
             dcg = relevants[0] + (relevants[1:]/np.log2(np.arange(2, len(relevants) + 1))).sum()
-            idcg = 1 + (1/np.log2(np.arange(2, len(golds)))).sum()
+            idcg = 1 + (1/np.log2(np.arange(2, len(golds)+1))).sum()
 
             values.append(dcg/idcg)
         return np.mean(values)
@@ -70,7 +71,6 @@ class Evaluator:
             if not clicked:
                 values.append(50)
 
-
         return np.mean(values)
 
 
@@ -78,4 +78,3 @@ class Evaluator:
 if __name__ == '__main__':
     evaluator = Evaluator('submissions/baseline.csv.gz')
     preds = evaluator.read_submission()
-    print(evaluator.clicks())
