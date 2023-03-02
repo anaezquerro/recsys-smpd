@@ -36,6 +36,7 @@ class Evaluator:
         for line in raw_playlists:
             items = list(map(lambda x: x.strip(), line.split(',')))
             playlists[int(items[0])] = items[1:]
+
         return playlists
 
     def RPrecision(self):
@@ -55,6 +56,7 @@ class Evaluator:
             idcg = 1 + (1/np.log2(np.arange(2, len(golds)+1))).sum()
 
             values.append(dcg/idcg)
+
         return np.mean(values)
 
     def clicks(self):
@@ -69,12 +71,7 @@ class Evaluator:
                     clicked = True
                     break
             if not clicked:
-                values.append(50)
+                values.append(51)
 
         return np.mean(values)
 
-
-
-if __name__ == '__main__':
-    evaluator = Evaluator('submissions/baseline.csv.gz')
-    preds = evaluator.read_submission()
