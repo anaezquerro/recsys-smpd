@@ -2,33 +2,51 @@ import sys
 from evaluation import *
 from baseline import *
 
+def prediction(print_time=True):
+    model = BaselineModel()
+
+    # training (counting track occurrences)
+    print("Counting track ocurrences")
+    start = time.time()
+    model.train()
+    end = time.time()
+    train_time = end - start
+
+    # prediction
+    print("Creating predictions")
+    start = time.time()
+    model.predict('submissions/baseline.csv.gz')
+    end = time.time()
+
+    if print_time:
+        print('Training time:', train_time)
+        print('Prediction time:', (end - start))
+
+def evaluation(print_time=True):
+    print("Evaluating popularity model")
+    evaluator = Evaluator('submissions/baseline.csv.gz')
+
+    start = time.time()
+    evaluator.read_submission()
+    print(f'RPrecision with popularity model {evaluator.RPrecision()}')
+    print(f'NDCG with popularity model {evaluator.RPrecision()}')
+    print(f'Clicks with popularity model {evaluator.clicks()}')
+    end = time.time()
+
+    if print_time:
+        print('Evaluating time:', (end - start))
+
 if __name__ == '__main__':
-    args = sys.argv[1:]
 
-    if '-pred' or '-both' in args:
-        model = BaselineModel()
-
-        # training (counting track occurrences)
-        start = time.time()
-        tracks = model.train()
-        end = time.time()
-
-        # prediction
-        start = time.time()
-        model.predict('submissions/baseline.csv.gz')
-        end = time.time()
-
-        if '-t' in args:
-            print('Training time:', (end - start))
-            print('Prediction time:', (end-start))
-
-    if '-eval' or '-both' in args:
-        evaluator = Evaluator('submissions/baseline.csv.gz')
-
-        evaluator.read_submission()
-
-        print(f'RPrecision with popularity model {evaluator.RPrecision()}')
-        print(f'NDCG with popularity model {evaluator.RPrecision()}')
-        print(f'Clicks with popularity model {evaluator.clicks()}')
+    if '-pred' or '-both' in sys.argv:
+        prediction('-t' in sys.argv)
+    elif '-eval' or '-both' in sys.argv:
+        evaluation('-t' in sys.argv)
+    elif '-t' in sys.argv:
+        prediction()
+        evaluation()
+    else:
+        prediction(False)
+        evaluation(False)
 
 
