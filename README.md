@@ -6,7 +6,7 @@ Equipo:
 
 ## Explicación breve del código 
 
-El código adjunto con este README se organiza en tres archivos `.py`:
+El código adjunto a este README se organiza en tres archivos `.py`:
 
 - `baseline.py`: Contiene la implementación del modelo basado en popularidad. La clase
  `BaselineModel` permite _parsear_ el dataset, realizar el conteo de _tracks_ y
@@ -20,4 +20,10 @@ Además, permite mostar los tiempos de ejecución de los distintos pasos.
 
 ## Manual de uso
 
-Para llevar a cabo la ejecución del código 
+Para utilizar las distintas funcionalidades del código se debe ejecutar el archivo `main.py`
+ por línea de comandos, seguido de algunos argumentos que indican qué se va a 
+ ejecutar y si se muestran o no los distintos tiempos de ejecución. 
+ 
+ - Si se añade el argumento `-pred` se ejecutará únicamente la lectura del `.json`,
+ el conteo de las _tracks_, la creación de las predicciones del modelo de poularidad 
+ y la generación del archivo `baseline.csv.gz` que guarda la predicción. 

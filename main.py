@@ -38,15 +38,15 @@ def evaluation(print_time=True):
 
 if __name__ == '__main__':
 
-    if '-pred' or '-both' in sys.argv:
+    if '-both' in sys.argv:
         prediction('-t' in sys.argv)
-    elif '-eval' or '-both' in sys.argv:
         evaluation('-t' in sys.argv)
-    elif '-t' in sys.argv:
+    elif '-pred' in sys.argv:
+        prediction('-t' in sys.argv)
+    elif '-eval' in sys.argv:
+        evaluation('-t' in sys.argv)
+    else:
         prediction()
         evaluation()
-    else:
-        prediction(False)
-        evaluation(False)
 
 
