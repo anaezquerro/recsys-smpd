@@ -1,24 +1,14 @@
 import os, json, time
 from typing import List, Dict
 from concurrent.futures import ProcessPoolExecutor
-from tools import Track, Reader
+from tools import *
 TRAIN_FOLDER = 'spotify_train_dataset/data/'
 PREDICT_FILE = 'spotify_test_playlists/test_input_playlists.json'
 N_RECS = 500
-INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es'
+INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
 MAX_THREADS = os.cpu_count()
 
-def coalesce(N: int, num_threads: int) -> list:
-    n_tasks = N//num_threads
-    rem_tasks = N % num_threads
 
-    indexes = [0]
-    for i in range(1, N+1):
-        if i <= rem_tasks:
-            indexes.append(indexes[i-1] + n_tasks + 1)
-        else:
-            indexes.append(indexes[i-1] + n_tasks)
-    return indexes
 
 
 
@@ -27,7 +17,6 @@ class BaselineModel:
         self.num_threads = num_threads
         self.tracks = dict()
         self.trained = False
-        # self.csv_file = open('train.csv', 'w', encoding='utf8')
 
 
     def train(self):
@@ -80,7 +69,7 @@ class BaselineModel:
         assert self.trained, 'This model has not been trained with any data'
 
         # extract playlists for evaluation
-        pids, tracks = zip(*Reader(PREDICT_FILE, only_uri=True).read().items())
+        pids, tracks = zip(*read_json(PREDICT_FILE).items())
         playlists = dict()
 
         # parallelize prediction

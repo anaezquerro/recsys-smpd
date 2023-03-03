@@ -1,4 +1,4 @@
-from tools import Reader
+from tools import *
 from typing import Dict, List
 import re
 import numpy as np
@@ -9,7 +9,7 @@ class Evaluator:
     def __init__(self, predicted_file: str):
         self.predicted_file = predicted_file
 
-        self.golds = Reader(GOLD_FILE, only_uri=True).read()
+        self.golds = read_json(GOLD_FILE)
         self.preds = self.read_submission()
 
         self.relevants = {
@@ -52,9 +52,8 @@ class Evaluator:
             # compute DCG
             golds, preds, relevants = self.golds[pid], self.preds[pid], self.relevants[pid]
 
-            dcg = (relevants/np.log2(2, len(relevants)+2)).sum()
-            dcg = relevants[0] + (relevants[1:]/np.log2(np.arange(3, len(relevants) + 2))).sum()
-            idcg = 1 + (1/np.log2(np.arange(3, len(golds)+2))).sum()
+            dcg = sum(relevants/np.log2(np.arange(2, len(relevants)+2)))
+            idcg = sum(1 / np.log2(np.arange(2, len(golds) + 2)))
 
             values.append(dcg/idcg)
 

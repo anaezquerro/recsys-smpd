@@ -8,35 +8,35 @@ def prediction(submission_path: str, print_time: bool):
     model = BaselineModel()
 
     # training (counting track occurrences)
-    print("Counting track ocurrences")
+    print("Counting track ocurrences...")
     start = time.time()
     model.train()
     end = time.time()
     train_time = end - start
 
     # prediction
-    print("Creating predictions")
+    print("Creating predictions...")
     start = time.time()
-    model.predict('submissions/baseline.csv.gz')
+    model.predict(submission_path)
     end = time.time()
 
     if print_time:
         print('Training time:', train_time)
-        print('Prediction time:', (end - start))
+        print('Prediction time:', (end - start), '\n\n')
 
 def evaluation(submission_path: str, print_time: bool):
-    print("Evaluating popularity model")
-    evaluator = Evaluator('submissions/baseline.csv.gz')
+    print("Evaluating popularity model...")
+    evaluator = Evaluator(submission_path)
 
     start = time.time()
     evaluator.read_submission()
-    print(f'RPrecision with popularity model {evaluator.RPrecision()}')
-    print(f'NDCG with popularity model {evaluator.NDCG()}')
-    print(f'Clicks with popularity model {evaluator.clicks()}')
+    print(f'RPrecision with popularity model: {evaluator.RPrecision()}')
+    print(f'NDCG with popularity model: {evaluator.NDCG()}')
+    print(f'Clicks with popularity model: {evaluator.clicks()}')
     end = time.time()
 
     if print_time:
-        print('Evaluating time:', (end - start))
+        print('\nEvaluation time:', (end - start))
 
 if __name__ == '__main__':
     print_time = '-t' in sys.argv
