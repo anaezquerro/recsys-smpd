@@ -2,7 +2,9 @@ import sys
 from evaluation import *
 from baseline import *
 
-def prediction(print_time=True):
+SUBMISSION_PATH = 'baseline.csv.gz'
+
+def prediction(submission_path: str, print_time: bool):
     model = BaselineModel()
 
     # training (counting track occurrences)
@@ -22,7 +24,7 @@ def prediction(print_time=True):
         print('Training time:', train_time)
         print('Prediction time:', (end - start))
 
-def evaluation(print_time=True):
+def evaluation(submission_path: str, print_time: bool):
     print("Evaluating popularity model")
     evaluator = Evaluator('submissions/baseline.csv.gz')
 
@@ -37,16 +39,17 @@ def evaluation(print_time=True):
         print('Evaluating time:', (end - start))
 
 if __name__ == '__main__':
+    print_time = 't' in sys.argv
+    submission_path = SUBMISSION_PATH if not '-out' in sys.argv else sys.argv[sys.argv.index('-out') + 1]
 
-    if '-both' in sys.argv:
-        prediction('-t' in sys.argv)
-        evaluation('-t' in sys.argv)
-    elif '-pred' in sys.argv:
-        prediction('-t' in sys.argv)
-    elif '-eval' in sys.argv:
-        evaluation('-t' in sys.argv)
-    else:
-        prediction()
-        evaluation()
+    if '-pred' or '-both' in sys.argv:
+        prediction(submission_path, print_time)
+    if '-eval' or '-both' in sys.argv:
+        evaluation(submission_path, print_time)
+
+    if any([token in sys.argv for token in ['-pred', '-eval', '-both']]):
+        prediction(submission_path, print_time)
+        evaluation(submission_path, print_time)
+
 
 
