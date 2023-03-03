@@ -1,4 +1,4 @@
-from structs import Reader
+from tools import Reader
 from typing import Dict, List
 import re
 import numpy as np
@@ -52,8 +52,9 @@ class Evaluator:
             # compute DCG
             golds, preds, relevants = self.golds[pid], self.preds[pid], self.relevants[pid]
 
-            dcg = relevants[0] + (relevants[1:]/np.log2(np.arange(2, len(relevants) + 1))).sum()
-            idcg = 1 + (1/np.log2(np.arange(2, len(golds)+1))).sum()
+            dcg = (relevants/np.log2(2, len(relevants)+2)).sum()
+            dcg = relevants[0] + (relevants[1:]/np.log2(np.arange(3, len(relevants) + 2))).sum()
+            idcg = 1 + (1/np.log2(np.arange(3, len(golds)+2))).sum()
 
             values.append(dcg/idcg)
 

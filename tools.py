@@ -47,3 +47,10 @@ class Reader:
             playlists[int(playlist['pid'])] = list(map(self.func, playlist['tracks']))
         return playlists
 
+
+def read_json(path: str):
+    data = json.load(open(path, 'r', encoding='utf8'))['playlists']
+    playlists = dict()
+    for playlist in data:
+        playlists[int(playlist['pid'])] = list(map(lambda track: track['track_uri'], playlist['tracks']))
+    return playlists

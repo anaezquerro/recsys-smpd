@@ -1,7 +1,7 @@
 import os, json, time
 from typing import List, Dict
 from concurrent.futures import ProcessPoolExecutor
-from structs import Track, Reader
+from tools import Track, Reader
 TRAIN_FOLDER = 'spotify_train_dataset/data/'
 PREDICT_FILE = 'spotify_test_playlists/test_input_playlists.json'
 N_RECS = 500

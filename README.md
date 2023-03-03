@@ -38,8 +38,7 @@ conjunto de test con las métricas mencionadas anteriormente.
 De forma opcional se pueden añadir los siguientes argumentos:
 
 - `-pred`: Se ejecutarán los pasos 1, 2 y 3.
-- `-eval`: Se ejecutará el paso 4. Para que funcione es necesario haber generado previamente el archivo de la _submission_.
-- `-both`: Se ejecutarán todos los pasos.
+- `-eval`: Se ejecutará solamente el paso 4. Para que funcione es necesario haber generado previamente el archivo de la _submission_.
 
 Además, a todas estas combinaciones de parámetros se le puede añadir:
 
