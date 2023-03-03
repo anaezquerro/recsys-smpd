@@ -134,5 +134,7 @@ dmypy.json
 spotify*/
 sample_submission/*
 submissions/*
-__pycache__/*
 .idea/*
+*.csv 
+*.txt 
+*.csv.gz
