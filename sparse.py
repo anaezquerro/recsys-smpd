@@ -6,8 +6,14 @@ import time
 from tools import *
 from typing import List, Dict
 import os
+from typing import Dict
 TRAIN_FOLDER = 'spotify_train_dataset/data/'
 MAX_THREADS = os.cpu_count()
+TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'
+
+
+
+
 
 
 def toCSV(N: int = 1000):
@@ -27,8 +33,14 @@ def toCSV(N: int = 1000):
                     relations[track] = len(relations)
                     rel_csv.write(f"{relations[track]},{track}\n")
                 indexes.write(f"{playlist['pid']},{relations[track]}\n")
+    rel_csv.close()
+    indexes.close()
 
-def CSVtoMatrix(csv_path):
+    return relations
+
+
+
+def csv2sparse(csv_path):
     df = pd.read_csv(csv_path, names=['playlist', 'track'])
 
     row = np.array(df.playlist)
@@ -40,8 +52,33 @@ def CSVtoMatrix(csv_path):
     return matrix
 
 
+def test2sparse(relations: Dict[str, int]):
+    playlists = json.load(open(TEST_FILE, encoding='utf8'))['playlists']
+    rows = list()
+    cols = list()
+    for i, playlist in enumerate(playlists):
+        tracks_indices = list()
+        tracks = set(map(lambda track: track['track_uri'], playlist['tracks']))
+        for track in tracks:
+            try:
+                tracks_indices.append(relations[track])
+            except KeyError:
+                continue
+        cols += tracks_indices
+        rows += [i] * len(tracks_indices)
+
+    rows, cols = np.array(rows), np.array(cols)
+    data = np.ones(len(rows))
+    matrix = sparse.csr_matrix((data, (rows, cols)), shape=(len(playlists), len(relations)))
+    return matrix
+
+
 if __name__ == '__main__':
-    toCSV()
-    matrix = CSVtoMatrix('indexes.csv')
-    sparse.save_npz('matrix.npz', matrix)
+    relations = toCSV()
+    matrix_train = csv2sparse('indexes.csv')
+    sparse.save_npz('R_train.npz', matrix_train)
+    matrix_test = test2sparse(relations)
+    sparse.save_npz('R_test.npz', matrix_test)
+
+
 

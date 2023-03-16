@@ -4,18 +4,49 @@ from scipy.sparse.linalg import norm
 from typing import Tuple
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-
+import os
+MAX_THREADS = os.cpu_count()
 
 
 class NeighbourModel:
-    def __init__(self, matrix_path: str, k: int, batch_size: int, num_threads: int):
+    def __init__(
+            self,
+            k: int,
+            batch_size: int = 100,
+            num_threads: int = MAX_THREADS,
+            train_path: str = 'R_train.npz'
+    ):
+        """
+        Initialization of the neighbour user-based recommender system.
+        :param k: Size of the neighbourhood.
+        :param batch_size: Number of rows of the test matrix that will be used
+        to compute similarity at each submit of the pool.
+        :param num_threads: Number of threads of the pool.
+        :param train_path: Path where train sparse matrix has been previously
+        stored.
+        """
+
         # n: número de playlists, m: número de tracks
-        self.Rp = sparse.load_npz(matrix_path)   # ~ (n, m)
+        self.Rtrain = sparse.load_npz(train_path)   # ~ (n, m)
+        self.Ntrain = norm(self.Rtrain, axis=1)
         self.k = k
-        self.n, self.m = self.Rp.shape
+        self.n, self.m = self.Rtrain.shape
 
         self.batch_size = batch_size
         self.num_threads = num_threads
+
+    def predict(self, test_path: str):
+        self.Rtest = sparse.load_npz(test_path)
+        # S = self.similarity()
+        S = list()
+        for start in range(0, 200, self.batch_size):
+            S_partial = self._similarity(start)
+            S.append(S_partial)
+
+        S = sparse.hstack(S)
+        Rest = S.dot(self.Rtrain)
+
+        return Rest
 
 
     def similarity(self):
@@ -23,49 +54,43 @@ class NeighbourModel:
             futures = list()
             for start in range(0, self.n, self.batch_size):
                 futures.append(
-                    pool.submit(self._similarity, start, start+self.batch_size)
+                    pool.submit(self._similarity, start)
                 )
 
             S = sparse.hstack([f.result() for f in futures])
+        return S
 
 
-    def _similarity(self, indexes: Tuple[int]):
-        start, end = indexes
+    def _similarity(self, start: int):
 
         # extract v (a slice of R matrix)
-        v = csr_matrix.transpose(self.Rp[start:end, :])         # ~ (b=end-start, m)
+        v = self.Rtest[start:(start+self.batch_size), :]       # ~ (b=end-start, m)
+        b = v.shape[0]
 
         # get dot product between v and R
-        sim = csr_matrix.transpose(self.Rp.dot(csr_matrix.transpose(v)))   # ~ (b, n)
+        sim = csr_matrix.transpose(self.Rtrain.dot(csr_matrix.transpose(v)))   # ~ (b, n)
 
-        # get norm of v
-        norms = norm(v, axis=0) # ~ b
+        Ntest = norm(v, axis=1)
 
         # normalize
-        sim = sim/norms
-
-        # get indices of the top k similarities
-        sim_k = sim.argsort(axis=0)[:, -self.k:]      # ~ [b, k]
-
-
-        sim = self.Rp.dot(v)  # ~ (n, end-start)
-        norms = norm(v, axis=0)     # ~ (end-start)
-        sim = sim/norms
+        sim = sim.multiply(1/self.Ntrain)
+        sim = sim.multiply(Ntest.reshape(b, 1))
         sim_k = sim.argsort(axis=0)[-self.k:]
 
         rows = sim_k.flatten()
-        cols = np.repeat(np.arange(end-start), self.k)
+        cols = np.repeat(np.arange(b), self.k)
         data = sim[:, sim_k].flatten()
 
-        sim_sparse = csr_matrix((data, (rows, cols)), shape=(end-start, self.m))
+        sim_sparse = csr_matrix((data, (rows, cols)), shape=(b, self.m))
 
         return sim_sparse
 
 
 
 
-
-
+if __name__ == '__main__':
+    model = NeighbourModel(100)
+    model.predict('R_test.npz')
 
 
 
