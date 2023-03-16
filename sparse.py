@@ -3,30 +3,45 @@ from scipy import sparse
 import numpy as np
 import pandas as pd
 import time
-
-start = time.time()
-
-with open('uri.csv', 'r') as rel:
-    tmp = csv.reader(rel)
-    for i in tmp:
-        relation = i[:-1]
-
-df = pd.read_csv('train.csv', names=['playlist', 'track']).drop_duplicates()
-
-playlists = list(df.playlist)
-tracks = list(df.track)
+from tools import *
+from typing import List, Dict
+import os
+TRAIN_FOLDER = 'spotify_train_dataset/data/'
+MAX_THREADS = os.cpu_count()
 
 
-row = np.array(playlists)
-col = np.array(tracks)
-data = np.ones(len(playlists))
-matrix = sparse.coo_matrix((data, (row, col)))
+def toCSV(N: int = 1000):
+    paths = os.listdir(TRAIN_FOLDER)[:N]
 
-counter = np.array(matrix.sum(axis=0))[0]
+    relations = dict()
+    indexes = open('indexes.csv', 'w')
+    rel_csv = open('relations.csv', 'w')
+    for path in paths:
+        playlists = json.load(open(TRAIN_FOLDER + '/' + path, 'r', encoding='utf8'))['playlists']
+        for playlist in playlists:
+            tracks = set(map(lambda track: track['track_uri'], playlist['tracks']))
+            for track in tracks:
+                try:
+                    relations[track]
+                except KeyError:
+                    relations[track] = len(relations)
+                    rel_csv.write(f"{relations[track]},{track}\n")
+                indexes.write(f"{playlist['pid']},{relations[track]}\n")
 
-popularity = {relation[i]: counter[i] for i in range(len(relation))}
+def CSVtoMatrix(csv_path):
+    df = pd.read_csv(csv_path, names=['playlist', 'track'])
 
-order = sorted(popularity, key=popularity.get, reverse=True)
+    row = np.array(df.playlist)
+    col = np.array(df.track)
+    data = np.ones(len(df.playlist))
 
-end = time.time()
-print(end-start)
+    matrix = sparse.csr_matrix((data, (row, col)))
+
+    return matrix
+
+
+if __name__ == '__main__':
+    toCSV()
+    matrix = CSVtoMatrix('indexes.csv')
+    sparse.save_npz('matrix.npz', matrix)
+

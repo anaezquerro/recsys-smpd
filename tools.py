@@ -6,7 +6,7 @@ def coalesce(N: int, num_threads: int) -> list:
     rem_tasks = N % num_threads
 
     indexes = [0]
-    for i in range(1, N+1):
+    for i in range(1, num_threads+1):
         if i <= rem_tasks:
             indexes.append(indexes[i-1] + n_tasks + 1)
         else:

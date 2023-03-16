@@ -63,8 +63,6 @@ class BaselineModel:
         return counter
 
 
-
-
     def predict(self, save: str = None) -> Dict[int, List[str]]:
         assert self.trained, 'This model has not been trained with any data'
 

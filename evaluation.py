@@ -42,7 +42,7 @@ class Evaluator:
     def RPrecision(self):
         values = list()
         for pid in self.golds.keys():
-            n_relevants = self.relevants[pid].sum()
+            n_relevants = self.relevants[pid][:len(self.golds[pid])].sum()
             values.append(n_relevants/len(self.golds[pid]))
         return np.mean(values)
 

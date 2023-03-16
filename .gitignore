@@ -138,3 +138,5 @@ submissions/*
 *.csv 
 *.txt 
 *.csv.gz
+*.npz
+*.pdf
