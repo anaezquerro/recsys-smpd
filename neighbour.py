@@ -74,14 +74,14 @@ class NeighbourModel:
 
         # normalize
         sim = sim.multiply(1/self.Ntrain)
-        sim = sim.multiply(Ntest.reshape(b, 1))
-        sim_k = sim.argsort(axis=0)[-self.k:]
+        sim = sim.multiply(Ntest.reshape(b, 1)).toarray()
+        sim_k = (-sim.toarray()).argsort(axis=1)[:, -self.k:]
 
         rows = sim_k.flatten()
         cols = np.repeat(np.arange(b), self.k)
-        data = sim[:, sim_k].flatten()
+        data = sim.toarray()[:, sim_k].flatten()
 
-        sim_sparse = csr_matrix((data, (rows, cols)), shape=(b, self.m))
+        sim_sparse = csr_matrix((data, (rows, cols)), shape=(b, self.n))
 
         return sim_sparse
 

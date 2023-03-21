@@ -140,3 +140,5 @@ submissions/*
 *.csv.gz
 *.npz
 *.pdf
+*.parquet
+*.pickle
