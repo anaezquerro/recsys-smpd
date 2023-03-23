@@ -4,6 +4,8 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 import os, pickle, time
 from tools import coalesce, read_json, flatten
+from scipy.sparse import load_npz, save_npz, csr_matrix
+from scipy.sparse.linalg import norm
 
 TRAIN_FOLDER = 'spotify_train_dataset/data/'
 MAX_THREADS = os.cpu_count()
@@ -14,6 +16,12 @@ class NeighbourModel:
     def __init__(
             self,
             k: int,
+            top: int = 20,
+            matrix_path: str = 'data/R.npz',
+            train_path: str = 'data/Rtrain.npz',
+            test_path: str = 'data/Rtest.npz',
+            trackmap_path: str = 'data/track-map.pickle',
+            popular_path: str = 'data/most-popular.npz',
             batch_size: int = 100,
             num_threads: int = MAX_THREADS,
     ):
@@ -30,12 +38,22 @@ class NeighbourModel:
         # n: número de playlists, m: número de tracks
         self.n_playlists = None
         self.n_tracks = None
+        self.test_pids = read_json(TEST_FILE).keys()
+        self.Rtrain, self.Rtest, self.popular = None, None, None
 
         self.batch_size = batch_size
         self.num_threads = num_threads
+        self.matrix_path = matrix_path
+        self.train_path = train_path
+        self.test_path = test_path
+        self.popular_path = popular_path
+        self.trackmap_path = trackmap_path
 
-    def predict(self, test_path: str):
-        self.Rtest = sparse.load_npz(test_path)
+    def predict(self):
+        self.Rtrain = load_npz(self.train_path)
+        self.Rtest = load_npz(self.test_path)
+        self.popular = load_npz(self.popular_path)
+
         # S = self.similarity()
         S = list()
         for start in range(0, 200, self.batch_size):
@@ -89,23 +107,25 @@ class NeighbourModel:
 
     # parsing functions to obtain sparse matrix
 
-    def preprocess(
-            self,
-            trackmap_path: str = 'data/track-map.pickle',
-            matrix_path: str = 'data/R.npz',
-    ):
+    def preprocess(self):
         start = time.time()
         train_paths = list(map(lambda x: f'{TRAIN_FOLDER}/{x}', os.listdir(TRAIN_FOLDER)[:1000]))
-        self.test_pids = read_json(TEST_FILE).keys()
 
-        _, relations = self.parse_tracks(train_paths + [TEST_FILE], trackmap_path)
+        _, relations = self.parse_tracks(train_paths + [TEST_FILE])
 
-        self.save_sparse(relations, matrix_path)
+        self.save_sparse(relations, self.matrix_path)
+
+        test_relations = dict()
+        for i, pid in enumerate(self.test_pids):
+            test_relations[i] = relations.pop(pid)
+
+        self.save_sparse(relations, self.train_path, 'most-popular.npz')
+        self.save_sparse(test_relations, self.test_path)
         end = time.time()
 
         print(f'Preprocessing time (compute and store sparse matrix: {end-start}')
 
-    def save_sparse(self, relations: Dict[int, Tuple[int]], path: str):
+    def save_sparse(self, relations: Dict[int, Tuple[int]], path: str, col_sum: bool | str = False):
         from scipy.sparse import csr_matrix, save_npz
         rows, cols = list(), list()
         for pid, tracks in relations.items():
@@ -115,18 +135,19 @@ class NeighbourModel:
         matrix = csr_matrix((data, (rows, cols)), shape=(max(relations.keys()) + 1, self.n_tracks))
         save_npz(path, matrix)
 
+        if col_sum:
+            save_npz(col_sum, norm(matrix, axis=0))
+
 
     def parse_tracks(
             self,
             paths: List[str],
-            store_path: str = 'data/track-map.pickle'
     ) -> Tuple[Dict[str, int], Dict[int, Tuple[int]]]:
 
         track_map = dict()      # stores track_uri -> id
         relations = dict()      # stores pid -> List[id]
 
         indexes = coalesce(len(paths), self.num_threads)
-
 
         with ProcessPoolExecutor(max_workers=self.num_threads) as pool:
             futures = list()
@@ -152,9 +173,9 @@ class NeighbourModel:
                 relations |= new_relations
 
         # save track_map
-        with open(store_path, 'wb') as file:
+        with open(self.trackmap_path, 'wb') as file:
             pickle.dump(track_map, file)
-
+        self.n_tracks = len(track_map)
         return track_map, relations
 
 
