@@ -66,7 +66,6 @@ def test2sparse(relations: Dict[str, int]):
     return matrix
 
 
-if __name__ == '__main__':
 
 
 

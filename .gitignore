@@ -142,3 +142,4 @@ submissions/*
 *.pdf
 *.parquet
 *.pickle
+sparse-ana.py
