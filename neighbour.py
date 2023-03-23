@@ -39,7 +39,7 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]))
 
 def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.ndarray, k: int):
-    # print(f'Item similarity of item {i}/{Rtrain.shape[1]}')
+    print(f'Item similarity of item {i}/{Rtrain.shape[1]}')
 
     # v ~ [batch_size, n_tracks]
     v = Rtrain.transpose()[i:(i + batch_size), :]
@@ -95,7 +95,7 @@ class NeighbourModel:
 
 
     def user_based(self):
-
+        self.Rtest = load_npz(self.test_path)
         Ntrain = norm(self.Rtrain, axis=1)
         Ntest = norm(self.Rtest, axis=1)
 
@@ -170,7 +170,6 @@ class NeighbourModel:
 
     def predict(self, mode='user', submission_path: str = 'submissions/p1.csv.gz'):
         self.Rtrain = load_npz(self.train_path)
-        self.Rtest = load_npz(self.test_path)
 
         if mode == 'user':
             Rest = self.user_based()
@@ -196,9 +195,7 @@ class NeighbourModel:
 
 
 if __name__ == '__main__':
-    model = NeighbourModel(10, batch_size=100, num_threads=4)
-    model.predict('user')
-    model = NeighbourModel(10, batch_size=50, num_threads=4)
+    model = NeighbourModel(10, batch_size=400, num_threads=4)
     model.predict('item')
 
 
