@@ -1,11 +1,13 @@
-from scipy import sparse
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import norm
+from typing import List, Dict, Tuple
 from typing import Tuple
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
-import os
+import os, pickle, time
+from tools import coalesce, read_json, flatten
+
+TRAIN_FOLDER = 'spotify_train_dataset/data/'
 MAX_THREADS = os.cpu_count()
+TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'
 
 
 class NeighbourModel:
@@ -14,7 +16,6 @@ class NeighbourModel:
             k: int,
             batch_size: int = 100,
             num_threads: int = MAX_THREADS,
-            train_path: str = 'R_train.npz'
     ):
         """
         Initialization of the neighbour user-based recommender system.
@@ -27,10 +28,8 @@ class NeighbourModel:
         """
 
         # n: número de playlists, m: número de tracks
-        self.Rtrain = sparse.load_npz(train_path)   # ~ (n, m)
-        self.Ntrain = norm(self.Rtrain, axis=1)
-        self.k = k
-        self.n, self.m = self.Rtrain.shape
+        self.n_playlists = None
+        self.n_tracks = None
 
         self.batch_size = batch_size
         self.num_threads = num_threads
@@ -88,9 +87,98 @@ class NeighbourModel:
 
 
 
+    # parsing functions to obtain sparse matrix
+
+    def preprocess(
+            self,
+            trackmap_path: str = 'data/track-map.pickle',
+            matrix_path: str = 'data/R.npz',
+    ):
+        start = time.time()
+        train_paths = list(map(lambda x: f'{TRAIN_FOLDER}/{x}', os.listdir(TRAIN_FOLDER)[:1000]))
+        self.test_pids = read_json(TEST_FILE).keys()
+
+        _, relations = self.parse_tracks(train_paths + [TEST_FILE], trackmap_path)
+
+        self.save_sparse(relations, matrix_path)
+        end = time.time()
+
+        print(f'Preprocessing time (compute and store sparse matrix: {end-start}')
+
+    def save_sparse(self, relations: Dict[int, Tuple[int]], path: str):
+        from scipy.sparse import csr_matrix, save_npz
+        rows, cols = list(), list()
+        for pid, tracks in relations.items():
+            rows += [pid]*len(tracks)
+            cols += tracks
+        (rows, cols), data = map(np.array, (rows, cols)), np.ones(len(rows))
+        matrix = csr_matrix((data, (rows, cols)), shape=(max(relations.keys()) + 1, self.n_tracks))
+        save_npz(path, matrix)
+
+
+    def parse_tracks(
+            self,
+            paths: List[str],
+            store_path: str = 'data/track-map.pickle'
+    ) -> Tuple[Dict[str, int], Dict[int, Tuple[int]]]:
+
+        track_map = dict()      # stores track_uri -> id
+        relations = dict()      # stores pid -> List[id]
+
+        indexes = coalesce(len(paths), self.num_threads)
+
+
+        with ProcessPoolExecutor(max_workers=self.num_threads) as pool:
+            futures = list()
+
+            for i in range(self.num_threads):
+                start, end = indexes[i], indexes[i+1]
+                futures.append(
+                    pool.submit(_collect_tracks, paths[start:end])
+                )
+
+            for _ in range(len(futures)):
+                partial_track_map, partial_relations = futures.pop(0).result()
+
+                # add track_map new values that are not in the global track_map
+                new_tracks = partial_track_map.keys() - track_map.keys()
+                track_map |= dict(zip(new_tracks, range(len(track_map), len(track_map)+len(new_tracks))))
+
+                # create a dictionary to map those tracks repeated to the global track ids
+                partial2global = {partial_track_map[track]: track_map[track] for track in partial_track_map.keys()}
+
+                # map indices of partial_relations to the global ids
+                new_relations = {pid: tuple(map(partial2global.get, tracks)) for pid, tracks in partial_relations.items()}
+                relations |= new_relations
+
+        # save track_map
+        with open(store_path, 'wb') as file:
+            pickle.dump(track_map, file)
+
+        return track_map, relations
+
+
+def _collect_tracks(paths: List[str]) -> Tuple[Dict[str, int], Dict[int, Tuple[int]]]:
+    track_map = dict()   # partial thread view of track_uri -> id
+    relations = dict()   # partial thread view of pid -> List[id]
+
+    for path in paths:
+        playlists = read_json(path, lambda x: tuple(set(x)))
+        new_tracks = set(flatten(playlists.values(), levels=1)) - track_map.keys()
+        track_map |= dict(zip(new_tracks, range(len(track_map), len(track_map)+len(new_tracks))))
+
+        # map track_uri -> id
+        playlists = {pid: tuple(map(track_map.get, tracks)) for pid, tracks in playlists.items()}
+        relations |= playlists
+
+    return track_map, relations
+
+
+
+
 if __name__ == '__main__':
     model = NeighbourModel(100)
-    model.predict('R_test.npz')
+    model.preprocess()
 
 
 

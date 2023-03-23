@@ -4,9 +4,7 @@ from tools import *
 import os, pickle
 from typing import Dict, Tuple, Set
 from concurrent.futures import ProcessPoolExecutor
-TRAIN_FOLDER = 'spotify_train_dataset/data/'
-MAX_THREADS = os.cpu_count()
-TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'
+
 
 
 def _collect_tracks(paths: List[str]):
