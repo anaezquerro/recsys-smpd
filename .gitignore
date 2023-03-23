@@ -135,3 +135,9 @@ spotify*/
 sample_submission/
 
 *.csv
+
+*.npz
+
+*.json
+
+*.csv.gz
