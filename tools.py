@@ -13,7 +13,7 @@ def coalesce(N: int, num_threads: int) -> list:
             indexes.append(indexes[i-1] + n_tasks)
     return indexes
 
-def read_json(path: str, funct: Callable = lambda x: x) -> Dict[int, List[str]]:
+def read_json(path: str, funct: Callable = set) -> Dict[int, List[str]]:
     data = json.load(open(path, 'r', encoding='utf8'))['playlists']
     playlists = dict()
     for playlist in data:
@@ -29,3 +29,16 @@ def flatten(list_of_lists, levels=None):
         else:
             items.append(l)
     return items
+
+
+def read_json_empty(path: str, funct: Callable = set) -> Dict[int, List[str]]:
+    empty_ids = list()
+
+    data = json.load(open(path, 'r', encoding='utf8'))['playlists']
+    playlists = dict()
+    for playlist in data:
+        if len(playlist['tracks']) == 0:
+            empty_ids.append(int(playlist['pid']))
+        else:
+            playlists[int(playlist['pid'])] = funct(map(lambda track: track['track_uri'], playlist['tracks']))
+    return playlists, empty_ids

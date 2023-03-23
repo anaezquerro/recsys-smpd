@@ -4,6 +4,7 @@ from tools import *
 import os, pickle
 from typing import Dict, Tuple, Set
 from concurrent.futures import ProcessPoolExecutor
+TRAIN_FOLDER = 'spotify_train_dataset/data/'
 
 
 
@@ -66,6 +67,6 @@ def test2sparse(relations: Dict[str, int]):
 
 
 if __name__ == '__main__':
-    train_sparse()
+
 
 
