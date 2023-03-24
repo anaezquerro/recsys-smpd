@@ -13,6 +13,30 @@ MAX_THREADS = os.cpu_count()
 TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'
 
 
+def csr_argsort(X: csr_matrix, topK: int, remov_diag: int = None):
+    indptr = X.indptr
+    cols = X.indices
+    data = X.data
+    sorted_indices = np.zeros((X.shape[0], topK), dtype=int)
+    sorted_values = np.zeros((X.shape[0], topK), dtype=float)
+
+    row, i = 0, indptr[0]
+    for j in indptr[1:]:
+        relcols = cols[i:j]
+        values = data[i:j]
+        if isinstance(remov_diag, int):
+            values = values[relcols != (row+remov_diag)]
+            relcols = relcols[relcols != (row+remov_diag)]
+        sorted_row = relcols[(-values).argsort().tolist()[:topK]]
+        sorted_indices[row, :len(sorted_row)] = sorted_row
+        sorted_values[row, :len(sorted_row)] = np.sort(values)[::-1].tolist()[:topK]
+        i = j
+        row +=1
+    return sorted_indices, sorted_values
+
+
+
+
 def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matrix,
                Ntrain: np.ndarray, Ntest: np.ndarray, k: int):
     # print(f'User similarity of user {i}/{Rtest.shape[0]}')
@@ -29,21 +53,19 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     sim = sim.multiply(1 / Ntest[i:(i + batch_size)].reshape(b, 1))
 
     # store indices of the K similarities
-    sim = sim.toarray()
-    top_k = sim.argsort(axis=1)[:, -(k + 1):-1]
+    top_k, data = csr_argsort(csr_matrix(sim), k)
 
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
-    data = sim[[[i] for i in range(b)], top_k.tolist()].flatten().tolist()
-
+    data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]))
 
 def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.ndarray, k: int):
-    print(f'Item similarity of item {i}/{Rtrain.shape[1]}')
 
     # v ~ [batch_size, n_tracks]
     v = Rtrain.transpose()[i:(i + batch_size), :]
     b = v.shape[0]
+
 
     # compute v * Rtrain ~ [batch_size, n_tracks]
     sim = v.dot(Rtrain)
@@ -53,14 +75,14 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     sim = sim.multiply(1 / Ntracks[i:(i + batch_size)].reshape(b, 1))
 
     # store indices of the K similarities
-    sim = sim.toarray()
-    top_k = sim.argsort(axis=1)[:, -(k + 1):-1]
+    sim = csr_matrix(sim)
+    top_k, data = csr_argsort(sim, k, remov_diag=i)
 
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
-    data = sim[[[i] for i in range(b)], top_k.tolist()].flatten().tolist()
-
+    data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
+
 
 
 class NeighbourModel:
@@ -115,7 +137,7 @@ class NeighbourModel:
             for _ in range(len(futures)):
                 S = vstack([S, futures.pop(0).result()])
 
-
+        #
         # S = None
         # for i in range(0, 500, self.batch_size):
         #     if S is None:
@@ -195,8 +217,14 @@ class NeighbourModel:
 
 
 if __name__ == '__main__':
-    model = NeighbourModel(10, batch_size=400, num_threads=4)
+    model = NeighbourModel(10, batch_size=1000, num_threads=8)
     model.predict('item')
+    # row = np.array([0, 0, 1, 2, 2, 2])
+    # col = np.array([0, 2, 3, 0, 1, 3])
+    # data = np.array([3, 1, -4, 5, -3, 2])
+    # m = csr_matrix((data, (row, col)), shape=(3, 4))
+    # print(m.toarray())
+    # print(csr_argsort(m, 3))
 
 
 
