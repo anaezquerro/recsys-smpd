@@ -12,6 +12,7 @@ class Evaluator:
         self.golds = read_json(GOLD_FILE)
         self.preds = self.read_submission()
 
+
         self.relevants = {
             pid: np.array([track in self.golds[pid] for track in self.preds[pid]])
                   for pid in self.golds.keys()
@@ -75,3 +76,8 @@ class Evaluator:
 
         return np.mean(values)
 
+if __name__ == '__main__':
+    evaluator = Evaluator('submissions/item-based.csv.gz')
+    print(evaluator.RPrecision())
+    print(evaluator.NDCG())
+    print(evaluator.clicks())

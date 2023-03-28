@@ -1,5 +1,7 @@
 from typing import List, Dict, Callable, Iterable
 import json
+INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
+
 
 def coalesce(N: int, num_threads: int) -> list:
     n_tasks = N//num_threads
@@ -42,3 +44,10 @@ def read_json_empty(path: str, funct: Callable = set) -> Dict[int, List[str]]:
         else:
             playlists[int(playlist['pid'])] = funct(map(lambda track: track['track_uri'], playlist['tracks']))
     return playlists, empty_ids
+
+
+def submit(path: str, playlists: Dict[int, List[str]], fill: List[str] = None):
+    with open(path, 'w', encoding='utf8') as file:
+        file.write(INFO_ROW + '\n')
+        for pid, tracks in playlists.items():
+            file.write(f'{pid},' + ','.join(tracks if len(tracks) > 0 else fill) + '\n')

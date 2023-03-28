@@ -12,6 +12,7 @@ MAX_THREADS = os.cpu_count()
 
 
 
+
 class BaselineModel:
     def __init__(self, num_threads: int = MAX_THREADS):
         self.num_threads = num_threads
@@ -85,7 +86,7 @@ class BaselineModel:
                 playlists = playlists | result
 
         if save:
-            self.submit(save, playlists)
+            submit(save, playlists)
 
         return playlists
 
@@ -101,13 +102,6 @@ class BaselineModel:
                 i += 1
         return playlists
 
-
-    def submit(self, path: str, playlists: Dict[int, List[str]]):
-        file = open(path, 'w', encoding='utf8')
-        file.write(INFO_ROW + '\n')
-        for pid, tracks in playlists.items():
-            file.write(f'{pid},' + ','.join(tracks) + '\n')
-        file.close()
 
 
 if __name__ == '__main__':

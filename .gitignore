@@ -128,18 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
-
-# data files
-spotify*/
-sample_submission/*
-submissions/*
-.idea/*
-*.csv 
-*.txt 
-*.csv.gz
 *.npz
-*.pdf
-*.parquet
-*.pickle
-sparse-ana.py
+*.csv.gz
+spotify*
+data/*
