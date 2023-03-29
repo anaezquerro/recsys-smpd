@@ -86,16 +86,6 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
 
-def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int]):
-    playlists = dict()
-    for i, pid in enumerate(test.keys()):
-        row = pidmap[pid]
-        tracks = Rest.indices[Rest.indptr[row]: Rest.indptr[row+1]]
-        similarities = Rest.data[Rest.indptr[row]: Rest.indptr[row+1]]
-        tracks = tracks[(-similarities).argsort().tolist()]
-        tracks = list(filter(lambda track: track not in test[pid], tracks))
-        playlists[pid] = tracks[:N_RECS]
-    return playlists
 
 
 
@@ -214,49 +204,6 @@ class NeighbourModel:
 
         popular = np.copy(np.asarray(-(self.Rtrain.sum(axis=0))).argsort().ravel()).tolist()[:N_RECS]
         del self.Rtrain, self.Rtest
-
-        # open pidmap, trackmap and test json
-        with open(self.test_path.replace('.npz', '.pickle'), 'rb') as file:
-            pidmap = pickle.load(file)
-        with open(self.trackmap_path, 'rb') as file:
-            trackmap = pickle.load(file)
-
-        test = read_json(TEST_FILE)
-        test = {pid: list(map(trackmap.get, tracks)) for pid, tracks in test.items()}
-
-        # invert trackmap
-        trackmap = {v: k for k, v in trackmap.items()}
-
-        tstart = time.time()
-
-        file = open(submit_path, 'w', encoding='utf8')
-        file.write(INFO_ROW + '\n')
-
-        pids = list(pidmap.keys())
-        indexes = coalesce(len(pids), self.num_threads)
-        with ProcessPoolExecutor(max_workers=self.num_threads) as pool:
-            futures = list()
-
-            for i in range(self.num_threads):
-                start, end = indexes[i], indexes[i+1]
-                futures.append(
-                    pool.submit(recommend, Rest, {pid: test[pid] for pid in pids[start:end]}, pidmap)
-                )
-
-            for _ in range(len(futures)):
-                playlists = futures.pop(0).result()
-                for pid, tracks in playlists.items():
-                    file.write(f'{pid},' + ','.join(list(map(trackmap.get, tracks))) + '\n')
-
-        tend = time.time()
-        print(f'Recommendation time: {tend-tstart}')
-
-        # add pids of the empty set
-        popular = list(map(trackmap.get, popular))
-        for pid in (test.keys() - pidmap.keys()):
-            file.write(f'{pid},' + ','.join(popular) + '\n')
-
-        file.close()
 
 
 
