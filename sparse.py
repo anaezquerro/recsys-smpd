@@ -8,6 +8,8 @@ TRAIN_FOLDER = 'spotify_train_dataset/data/'
 MAX_THREADS = os.cpu_count()
 TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'
 
+if not os.path.exists('data/'):
+    os.makedirs('data/')
 
 def collect_tracks(paths: List[str]) -> Tuple[Dict[str, int], Dict[int, Tuple[int]]]:
     track_map = dict()  # partial thread view of track_uri -> id

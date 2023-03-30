@@ -8,7 +8,6 @@ GOLD_FILE = 'spotify_test_playlists/test_eval_playlists.json'
 class Evaluator:
     def __init__(self, predicted_file: str):
         self.predicted_file = predicted_file
-
         self.golds = read_json(GOLD_FILE)
         self.preds = self.read_submission()
 
@@ -77,7 +76,7 @@ class Evaluator:
         return np.mean(values)
 
 if __name__ == '__main__':
-    evaluator = Evaluator('submissions/item-based.csv.gz')
+    evaluator = Evaluator('submissions/user-based.csv.gz')
     print(evaluator.RPrecision())
     print(evaluator.NDCG())
     print(evaluator.clicks())

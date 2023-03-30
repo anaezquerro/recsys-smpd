@@ -4,7 +4,7 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 import os, pickle, time, sys
 from tools import coalesce, read_json, flatten, submit
-from scipy.sparse import load_npz, save_npz, csr_matrix, vstack
+from scipy.sparse import load_npz, save_npz, csr_matrix, vstack, csr_array
 from scipy.sparse.linalg import norm
 from tools import INFO_ROW
 N_RECS = 500
@@ -84,6 +84,19 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     cols = top_k.flatten().tolist()
     data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
+
+def recommend(pids: List[int], Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int]) -> Dict[int, List[int]]:
+    playlists = dict()
+    for i, pid in enumerate(pids):
+        if i%100 == 0:
+            print(f'Recommending for playlist {i}/{len(pids)}')
+        ratings = Rest.getrow(pidmap[pid])
+        ratings[:, test[pid]] = 0
+        ratings.eliminate_zeros()
+        ratings, cols = ratings.data, ratings.indices
+        playlists[pid] = cols[(-ratings).argsort().tolist()[:N_RECS]]
+
+    return playlists
 
 class NeighbourModel:
     def __init__(
@@ -181,7 +194,7 @@ class NeighbourModel:
         Rest = self.Rtest.dot(S)
         return Rest
 
-    def predict(self, mode='user', submit_path: str = None, save_matrix: str = None, load: bool = False):
+    def predict(self, mode='user', submit_path: str = None, save_matrix: str = None, load: bool = False, num_threads: int = MAX_THREADS):
         self.Rtrain = load_npz(self.train_path)
 
         if load:
@@ -197,16 +210,62 @@ class NeighbourModel:
                 save_npz(save_matrix, Rest)
 
         # compute most popular tracks
-
         popular = np.copy(np.asarray(-(self.Rtrain.sum(axis=0))).argsort().ravel()).tolist()[:N_RECS]
         del self.Rtrain, self.Rtest
 
+        # ------------- Recomending time -------------
+        tstart = time.time()
+        test = read_json(TEST_FILE)
+        with open(self.trackmap_path, 'rb') as file:
+            trackmap = pickle.load(file)
+        with open(self.test_path.replace('.npz', '.pickle'), 'rb') as file:
+            pidmap = pickle.load(file)
+
+        test = {pid: list(map(trackmap.get, tracks)) for pid, tracks in test.items()}
+        test_empty = list()
+        for pid in list(test.keys()):
+            if len(test[pid]) == 0:
+                test_empty.append(pid)
+                test.pop(pid)
+
+
+        pids = list(test.keys())
+        with ProcessPoolExecutor(max_workers=num_threads) as pool:
+            futures = list()
+            indexes = coalesce(len(pids), num_threads)
+
+            for i in range(num_threads):
+                start, end = indexes[i], indexes[i+1]
+                futures.append(
+                    pool.submit(
+                        recommend,
+                        pids[start:end], Rest, test, pidmap)
+                )
+
+            playlists = futures.pop(0).result()
+            for _ in range(len(futures)):
+                playlists |= futures.pop(0).result()
+
+        tend = time.time()
+        print(f'Recommending time: {tend-tstart}')
+
+
+        # convert trackmap from id -> track_uri
+        trackmap = {value: key for key, value in trackmap.items()}
+
+        # write results in the submission
+        with open(submit_path, 'w', encoding='utf8') as file:
+            file.write(INFO_ROW + '\n')
+            for pid, tracks in playlists.items():
+                file.write(f'{pid},' + ','.join(list(map(trackmap.get, tracks))) + '\n')
+            for pid in test_empty:
+                file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
 
 if __name__ == '__main__':
     if sys.argv[1] == 'user':
-        model = NeighbourModel(10, batch_size=int(5e2), num_threads=8)
-        model.predict('user', submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz', save_matrix='data/Rest-user.npz')
+        model = NeighbourModel(100, batch_size=int(5e2), num_threads=8)
+        model.predict('user', submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz', save_matrix='data/Rest-user.npz', load=True)
     elif sys.argv[1] == 'item':
         model = NeighbourModel(10, batch_size=int(20e3), num_threads=8)
         model.predict('item', submit_path=f'{SUBMISSION_FOLDER}/item-based.csv.gz', save_matrix='data/Rest-item.npz')
