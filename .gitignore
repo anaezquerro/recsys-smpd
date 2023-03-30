@@ -132,5 +132,5 @@ dmypy.json
 *.csv.gz
 spotify*
 data/*
-__idea__/
+.idea/*
 
