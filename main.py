@@ -1,54 +1,79 @@
-import sys
+import argparse
 from evaluation import *
 from baseline import *
+from neighbour import *
 
-SUBMISSION_PATH = 'baseline.csv.gz'
+SUBMISSION_PATH = 'submissions.csv.gz'
 
-def prediction(submission_path: str, print_time: bool):
-    model = BaselineModel()
+def prediction(args):
 
-    # training (counting track occurrences)
-    print("Counting track ocurrences...")
-    start = time.time()
-    model.train()
-    end = time.time()
-    train_time = end - start
+    if args.model == 'base':
+        model = BaselineModel(num_threads=args.num_threads_pred)
 
-    # prediction
-    print("Creating predictions...")
-    start = time.time()
-    model.predict(submission_path)
-    end = time.time()
+        # training (counting track occurrences)
+        print("Counting track ocurrences...")
+        start = time.time()
+        model.train()
+        end = time.time()
+        train_time = start - end
 
-    if print_time:
-        print('Training time:', train_time)
-        print('Prediction time:', (end - start), '\n\n')
+        # prediction
+        print("Creating predictions...")
+        start = time.time()
+        model.predict(args.path)
+        end = time.time()
 
-def evaluation(submission_path: str, print_time: bool):
-    print("Evaluating popularity model...")
-    evaluator = Evaluator(submission_path)
+        if args.time:
+            print('Training time:', train_time)
+            print('Prediction time:', (end - start), '\n\n')
+
+    else:
+        model = NeighbourModel(k=args.k, batch_size=args.batch_size, num_threads=args.num_threads_pred)
+
+        start = time.time()
+        Rest, popular = model.predict(args.model)
+        model.recommend(Rest, popular, submit_path=args.path)
+        end = time.time()
+
+        if args.time:
+            print('Prediction time:', (end - start), '\n\n')
+
+
+def evaluation(args):
+    print("Evaluating model...")
+    evaluator = Evaluator(args.path)
 
     start = time.time()
     evaluator.read_submission()
-    print(f'RPrecision with popularity model: {evaluator.RPrecision()}')
-    print(f'NDCG with popularity model: {evaluator.NDCG()}')
-    print(f'Clicks with popularity model: {evaluator.clicks()}')
+    print(f'RPrecision: {evaluator.RPrecision()}')
+    print(f'NDCG: {evaluator.NDCG()}')
+    print(f'Clicks: {evaluator.clicks()}')
     end = time.time()
 
-    if print_time:
+    if args.time:
         print('\nEvaluation time:', (end - start))
 
 if __name__ == '__main__':
-    print_time = '-t' in sys.argv
-    submission_path = SUBMISSION_PATH if not '-out' in sys.argv else sys.argv[sys.argv.index('-out') + 1]
+    parser = argparse.ArgumentParser()
 
-    if '-pred' in sys.argv:
-        prediction(submission_path, print_time)
-    elif '-eval' in sys.argv:
-        evaluation(submission_path, print_time)
+    parser.add_argument('-m', '--model', choices=['base', 'user', 'item'], default='base')
+    parser.add_argument('-a', '--action', choices=['pred', 'eval'], default='both')
+    parser.add_argument('-t', '--time', action='store_true')
+    parser.add_argument('-k', '--k', type=int, default=100)
+    parser.add_argument('-p', '--path', default=SUBMISSION_PATH)
+    parser.add_argument('-b', '--batch_size', type=int, default=500)
+    parser.add_argument('-n', '--num_threads_pred', type=int, default=MAX_THREADS)
+    parser.add_argument('--num_threads_rec', type=int, default=MAX_THREADS)
+
+    args = parser.parse_args()
+
+    if args.action == 'pred':
+        prediction(args)
+    elif args.action == 'eval':
+        evaluation(args)
     else:
-        prediction(submission_path, print_time)
-        evaluation(submission_path, print_time)
+        prediction(args)
+        evaluation(args)
 
 
 

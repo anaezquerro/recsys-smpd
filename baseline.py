@@ -8,17 +8,11 @@ N_RECS = 500
 INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
 MAX_THREADS = os.cpu_count()
 
-
-
-
-
-
 class BaselineModel:
     def __init__(self, num_threads: int = MAX_THREADS):
         self.num_threads = num_threads
         self.tracks = dict()
         self.trained = False
-
 
     def train(self):
         self.trained = True
@@ -43,7 +37,6 @@ class BaselineModel:
 
                 # suma los que están en los dos
                 self.tracks |= {key: counter[key] + self.tracks[key] for key in counter.keys() & self.tracks.keys()}
-
 
         self.tracks = sorted(self.tracks.keys(), key=self.tracks.get, reverse=True)
 

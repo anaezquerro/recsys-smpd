@@ -195,7 +195,7 @@ class NeighbourModel:
     def predict(
             self,
             mode='user',
-            save_matrix: str = None
+            save_matrix: str = 'data/Rest.npz'
     ) -> Tuple[csr_matrix]:
         self.Rtrain = load_npz(self.train_path)
 
@@ -270,11 +270,11 @@ if __name__ == '__main__':
     if sys.argv[1] == 'user':
         model = NeighbourModel(100, batch_size=int(5e2), num_threads=8)
         Rest, popular = model.predict('user', 'data/Rest.npz')
-        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/user-based.gz')
+        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz')
     elif sys.argv[1] == 'item':
-        model = NeighbourModel(100, batch_size=int(20e3), num_threads=8)
+        model = NeighbourModel(50, batch_size=int(20e3), num_threads=8)
         Rest, popular = model.predict('item', 'data/Rest.npz')
-        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/user-based.gz')
+        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/item-based.csv.gz')
     else:
         raise NotImplementedError
 

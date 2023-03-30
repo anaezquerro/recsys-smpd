@@ -35,3 +35,15 @@ de ejecución.
 
 ## Ejemplos de ejecuciones
 
+
+## Resultados 
+
+| Modelo       | R-Precision | nDCG | CRT   |
+|--------------|-------------|------|-------|
+| popularity   | 0.02        | 0.07 | 22.27 |
+| user (k=100) | 0.13        | 0.28 | 6.17  |
+| item (k=50)  | 0.12        | 0.24 | 8.76  |
+
+
+## Tiempos de ejecución
+
