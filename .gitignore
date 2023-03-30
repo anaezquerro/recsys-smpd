@@ -133,4 +133,5 @@ dmypy.json
 spotify*
 data/*
 .idea/*
+submissions/*
 

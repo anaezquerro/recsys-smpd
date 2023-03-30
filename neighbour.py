@@ -88,8 +88,6 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
 def recommend(pids: List[int], Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int]) -> Dict[int, List[int]]:
     playlists = dict()
     for i, pid in enumerate(pids):
-        if i%100 == 0:
-            print(f'Recommending for playlist {i}/{len(pids)}')
         ratings = Rest.getrow(pidmap[pid])
         ratings[:, test[pid]] = 0
         ratings.eliminate_zeros()
@@ -194,26 +192,34 @@ class NeighbourModel:
         Rest = self.Rtest.dot(S)
         return Rest
 
-    def predict(self, mode='user', submit_path: str = None, save_matrix: str = None, load: bool = False, num_threads: int = MAX_THREADS):
+    def predict(
+            self,
+            mode='user',
+            save_matrix: str = None
+    ) -> Tuple[csr_matrix]:
         self.Rtrain = load_npz(self.train_path)
 
-        if load:
-            Rest = load_npz(save_matrix)
+        if mode == 'user':
+            Rest = self.user_based()
+        elif mode == 'item':
+            Rest = self.item_based()
         else:
-            if mode == 'user':
-                Rest = self.user_based()
-            elif mode == 'item':
-                Rest = self.item_based()
-            else:
-                raise NotImplementedError
-            if save_matrix:
-                save_npz(save_matrix, Rest)
+            raise NotImplementedError
 
         # compute most popular tracks
         popular = np.copy(np.asarray(-(self.Rtrain.sum(axis=0))).argsort().ravel()).tolist()[:N_RECS]
         del self.Rtrain, self.Rtest
 
-        # ------------- Recomending time -------------
+        if save_matrix:
+            save_npz(save_matrix, Rest)
+
+        return Rest, popular
+
+
+    def recommend(self, Rest: str | csr_matrix, popular: csr_matrix, submit_path: str, num_threads: int = MAX_THREADS):
+        if isinstance(Rest, str):
+            Rest = load_npz(Rest)
+
         tstart = time.time()
         test = read_json(TEST_FILE)
         with open(self.trackmap_path, 'rb') as file:
@@ -227,7 +233,6 @@ class NeighbourModel:
             if len(test[pid]) == 0:
                 test_empty.append(pid)
                 test.pop(pid)
-
 
         pids = list(test.keys())
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
@@ -246,10 +251,6 @@ class NeighbourModel:
             for _ in range(len(futures)):
                 playlists |= futures.pop(0).result()
 
-        tend = time.time()
-        print(f'Recommending time: {tend-tstart}')
-
-
         # convert trackmap from id -> track_uri
         trackmap = {value: key for key, value in trackmap.items()}
 
@@ -261,13 +262,19 @@ class NeighbourModel:
             for pid in test_empty:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
+        tend = time.time()
+        print(f'Recommending time: {tend-tstart}')
+
 
 if __name__ == '__main__':
     if sys.argv[1] == 'user':
         model = NeighbourModel(100, batch_size=int(5e2), num_threads=8)
-        model.predict('user', submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz', save_matrix='data/Rest-user.npz', load=True)
+        Rest, popular = model.predict('user', 'data/Rest.npz')
+        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/user-based.gz')
     elif sys.argv[1] == 'item':
-        model = NeighbourModel(10, batch_size=int(20e3), num_threads=8)
-        model.predict('item', submit_path=f'{SUBMISSION_FOLDER}/item-based.csv.gz', save_matrix='data/Rest-item.npz')
+        model = NeighbourModel(100, batch_size=int(20e3), num_threads=8)
+        Rest, popular = model.predict('item', 'data/Rest.npz')
+        model.recommend(Rest, popular, submit_path=f'{SUBMISSION_FOLDER}/user-based.gz')
     else:
         raise NotImplementedError
+
