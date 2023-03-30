@@ -69,7 +69,6 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     v = Rtrain.transpose()[i:(i + batch_size), :]
     b = v.shape[0]
 
-
     # compute v * Rtrain ~ [batch_size, n_tracks]
     sim = v.dot(Rtrain)
 
@@ -86,16 +85,13 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
 
-
-
-
 class NeighbourModel:
     def __init__(
             self,
             k: int,
             train_path: str = 'data/Rtrain.npz',
             test_path: str = 'data/Rtest.npz',
-            trackmap_path: str = 'data/track-map.pickle',
+            trackmap_path: str = 'data/trackmap.pickle',
             batch_size: int = 200,
             num_threads: int = MAX_THREADS,
     ):
@@ -208,24 +204,11 @@ class NeighbourModel:
 
 
 if __name__ == '__main__':
-    # model = NeighbourModel(10, batch_size=int(5e2), num_threads=8)
-    # model.predict('user', submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz', save_matrix='data/Rest-user.npz', load=True)
-
-    model = NeighbourModel(10, batch_size=int(20e3), num_threads=8)
-    model.predict('item', submit_path=f'{SUBMISSION_FOLDER}/item-based.csv.gz', save_matrix='data/Rest-item.npz')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if sys.argv[1] == 'user':
+        model = NeighbourModel(10, batch_size=int(5e2), num_threads=8)
+        model.predict('user', submit_path=f'{SUBMISSION_FOLDER}/user-based.csv.gz', save_matrix='data/Rest-user.npz')
+    elif sys.argv[1] == 'item':
+        model = NeighbourModel(10, batch_size=int(20e3), num_threads=8)
+        model.predict('item', submit_path=f'{SUBMISSION_FOLDER}/item-based.csv.gz', save_matrix='data/Rest-item.npz')
+    else:
+        raise NotImplementedError

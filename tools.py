@@ -1,5 +1,5 @@
 from typing import List, Dict, Callable, Iterable
-import json
+import json, pickle
 INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
 
 
@@ -31,6 +31,10 @@ def flatten(list_of_lists, levels=None):
         else:
             items.append(l)
     return items
+
+def save_pickle(obj, path: str):
+    with open(path, 'wb') as file:
+        pickle.dump(obj, file)
 
 
 def read_json_empty(path: str, funct: Callable = set) -> Dict[int, List[str]]:
