@@ -59,7 +59,7 @@ python3 main.py base -eval -t
 Para probar el `NeighbourModel`, primero generar las matrices _sparse_:
 
 ```shell
-python3 main.py user --action sparsify -t -v
+python3 main.py user --action sparsify -t -v --train_path=alfonso/Rtrain.npz
 ```
 
 Y después se pueden probar los modelos _user_ e _item_ _based_:
@@ -77,6 +77,9 @@ Se recomienda realizar previamente una estimación de la configuración a utiliz
 
 
 ## Resultados 
+
+En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezquerro_udc_es/EuDyme7p-uFPpVomMjwWkmgBhpUUz3clxkTMELy2J0BZjA?e=FOFokB) 
+se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 
 | Modelo       | R-Precision | nDCG | CRT   |
 |--------------|-------------|------|-------|
