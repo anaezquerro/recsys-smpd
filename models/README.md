@@ -4,7 +4,7 @@ En este documento se explican brevemente los modelos implementados para la prác
 y el preporcesamiento necesario para ejecutar cada uno de ellos sobre el 
 [SPMD](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge).
 
-## Modelo basado en popularidad (`baseline.py`)
+## Modelo basado en popularidad ([baseline.py](baseline.py))
 
 Para el modelo basado en popularidad el único preprocesamiento necesario para 
 generar una _submission_ de recomendación es contar la ocurrencia de los _tracks_ sobre 
@@ -22,12 +22,12 @@ Fases de la ejecución del modelo:
 1. `preprocess`: _Parsing_ del conjunto de entrenamiento para realizar el conteo de los _tracks_.
 2. `recommend`: Generación de la recomendación.
 
-## Modelo basado en vecindarios (`neighbour.py`)
+## Modelo basado en vecindarios ([neighbour.py](neighbour.py))
 
 En el modelo basado en vecindarios, para calcular las similaridades entre _playlists_ 
 y _tracks_ fue necesario crear una matriz _sparse_ del conjunto de entrenamiento y otra 
 del conjunto de test. 
-La clase `Sparse` (`sparse.py`) realiza este proceso en paralelo: primero recoge todas 
+La clase `Sparse` ([sparse.py](../utils/sparse.py)) realiza este proceso en paralelo: primero recoge todas 
 las _playlists_ y todos los _tracks_ del dataset y crea las matrices _sparse_ y las 
 almacena.
 
