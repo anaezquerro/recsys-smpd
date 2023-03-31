@@ -72,7 +72,7 @@ python3 main.py user -eval --action recommend -t -v --k=100
 python3 main.py item -eval --action recommend -t -v --k=20 --batch_size=15000
 ```
 
-Para el `NeighbourModel` se comprobó configuración de _batch_size_ y _num_threads_ en una máquina de 32GB de RAM y 20 hilos. 
+Para el `NeighbourModel` se comprobó la configuración de _batch_size_ y _num_threads_ en una máquina de 32GB de RAM y 20 hilos. 
 Se recomienda realizar previamente una estimación de la configuración a utilizar dependiendo de las capacidades de la máquina.
 
 
