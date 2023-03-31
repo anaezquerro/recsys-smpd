@@ -1,7 +1,7 @@
+import os
 from typing import List, Dict, Callable, Iterable
 import json, pickle
-INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
-
+from utils.constants import INFO_ROW
 
 def coalesce(N: int, num_threads: int) -> list:
     n_tasks = N//num_threads
@@ -32,22 +32,6 @@ def flatten(list_of_lists, levels=None):
             items.append(l)
     return items
 
-def save_pickle(obj, path: str):
-    with open(path, 'wb') as file:
-        pickle.dump(obj, file)
-
-
-def read_json_empty(path: str, funct: Callable = set) -> Dict[int, List[str]]:
-    empty_ids = list()
-
-    data = json.load(open(path, 'r', encoding='utf8'))['playlists']
-    playlists = dict()
-    for playlist in data:
-        if len(playlist['tracks']) == 0:
-            empty_ids.append(int(playlist['pid']))
-        else:
-            playlists[int(playlist['pid'])] = funct(map(lambda track: track['track_uri'], playlist['tracks']))
-    return playlists, empty_ids
 
 
 def submit(path: str, playlists: Dict[int, List[str]], fill: List[str] = None):
@@ -55,3 +39,20 @@ def submit(path: str, playlists: Dict[int, List[str]], fill: List[str] = None):
         file.write(INFO_ROW + '\n')
         for pid, tracks in playlists.items():
             file.write(f'{pid},' + ','.join(tracks if len(tracks) > 0 else fill) + '\n')
+
+
+def load_pickle(path: str):
+    with open(path, 'rb') as file:
+        obj = pickle.load(file)
+    return obj
+
+
+def save_pickle(obj, path: str):
+    with open(path, 'wb') as file:
+        pickle.dump(obj, file)
+
+
+def create_folder(path: str):
+    folder = '/'.join(path.split('/')[:-1])
+    if len(folder) > 0 and not os.path.exists(folder):
+        os.makedirs(folder)

@@ -7,33 +7,72 @@ Equipo:
 
 ## Modelos implementados
 
-- Modelo basado en popularidad (`baseline.py`). 
-- Modelo basado en vecindarios (`neighbour.py`) de playlists o de tracks.
+- Modelo basado en popularidad ([baseline.py](models/baseline.py)]. 
+- Modelo basado en vecindarios ([neighbour.py](models/neighbour.py)) de playlists (_user-based_) o de tracks (_item-based_).
+
+Para mayor información acerca de la implementación de los modelos se recomienda leer [models/README.md](models/README.md).
 
 ## Manual de uso
 
 Para realizar las recomendaciones y evaluar los modelos se puede ejecutar directamente el archivo 
-`main.py` por línea de comandos, seguido de los siguientes argumentos:
+[main.py](main.py) por línea de comandos, seguido de los siguientes argumentos:
 
-- `model`: Nombre del modelo que se quiere ejecutar (`popularity`, `user`, `item`).
-- `action`: Modo de ejecución: recomendación (`pred`) y evaluación (`eval`). En caso de no 
-no especificar ninguna se ejecutarán ambas.
+- `model`: Nombre del modelo que se quiere ejecutar (`base`, `user`, `item`).
+- `-eval`: Añadir el _flag_ para evaluar la _submission generada_.
 
 A mayores se pueden añadir forma opcional los siguientes parámetros:
 
-- `submit_path`: Ruta en la que se exportará la recomnedación en el 
-[formato del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/).
+- `submit_path`: Ruta en la que se exportará la recomendación en el 
+[formato del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/). Por defecto
+  - En el `BaselineModel` se guardará como `submissions/base.csv.gz`.
+  - En el `NeighourModel` se guardará como `submissions/user.csv.gz` o `submissions/item.csv.gz`.
 - `num_threads`: Número de hilos que se utilizarán para paralelizar en todas las fases 
-predicción y recomendación. Por defecto el número de procesos de la máquina.
-- `num_threads_rec`: Número de hilos que se utilizarán para paralelizar la fase de 
-recomendación.
-- `batch_size`: Para el modelo de vecindario, el número de filas de la matriz con las 
-que se paraleliza el cálculo de la similitud. Por defecto 500.
+predicción y recomendación. Por defecto:
+  - En el `BaselineModel` es el número de procesadores de la máquina
+  - En el `NeighourModel` para `sparsify` es el número de procesadores de la máquina, y para `recommend` es 8 al realizar los productos matriciales y el número de procesadores de la máquina para realizar la recomendación.
+- `time`: Valor booleano que indica si see quiere imprimir por pantalla o no los tiempos de ejecución. Por defecto `True`.
+- `verbose`: Valor booleano que indica si se quiere imprimir por pantalla un _trace_ de la ejecución. Por defecto `True`.
+
+Para `NeighbourModel` se añaden parámetros adicionales:
+- `action`: Para el modelo de vecindarios se ha separado la ejecución en dos fases: `sparsify` (para generar las matrices 
+_sparse_ del dataset y guardarlas) y `recommend` (para generar recomendacioes en base a un vecindario). Por defecto, `recommend`.
+- `batch_size`: Número de filas de la matriz con las que se paraleliza el cálculo de la similitud. Por defecto 500.
 - `k`: Número de vecinos a considerar la similitud en el modelo de vecindarios. Por defecto 100.
-- `time`: Valor booleano que indica si see quiere imprimir por pantalla o no los tiempos 
-de ejecución.
+- `train_path`: Ruta donde se guarda la matriz _sparse_ de entrenamiento.
+- `test_path`: Ruta donde se guarda la matriz _sparse_ de test.
+- `trackmap_path`: Ruta donde se guarda el diccionario que mapea _track_ URIs a columnas de las matrices _sparse_.
+- `matrix_path`: Ruta donde se guardará la matriz de _ratings_ estimados.
+- `load`: Valor booleano que indica si se debe cargar o no la matriz de _ratings_ estimados.
 
 ## Ejemplos de ejecuciones
+
+Para probar los dos modelos implementados se sugiere no alterar los parámetros que vienen por defecto (a excepción del 
+número de hilos y _batch_size_). A continuación se propone un ejemplo de ejecución por línea de comandos para probar 
+los dos modelos desde cero.
+
+Para probar el `BaselineModel`:
+
+```shell
+python3 main.py base -eval -t
+```
+
+Para probar el `NeighbourModel`, primero generar las matrices _sparse_:
+
+```shell
+python3 main.py user --action sparsify -t -v
+```
+
+Y después se pueden probar los modelos _user_ e _item_ _based_:
+
+```shell
+python3 main.py user -eval --action recommend -t -v --k=100
+```
+
+```shell
+python3 main.py item -eval --action recommend -t -v --k=20 --batch_size=15000
+```
+
+Se recomienda utilizar para el `NeighbourModel` esta configuración de _batch_size_
 
 
 ## Resultados 
@@ -42,8 +81,7 @@ de ejecución.
 |--------------|-------------|------|-------|
 | popularity   | 0.02        | 0.07 | 22.27 |
 | user (k=100) | 0.13        | 0.28 | 6.17  |
-| item (k=50)  | 0.12        | 0.24 | 8.76  |
+| item (k=20)  | 0.12        | 0.24 | 8.76  |
 
 
-## Tiempos de ejecución
 

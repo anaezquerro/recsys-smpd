@@ -1,13 +1,13 @@
-from tools import *
+from utils.tools import read_json
+from utils.constants import GOLD_FILE
 from typing import Dict, List
-import re
+import re, sys
 import numpy as np
-GOLD_FILE = 'spotify_test_playlists/test_eval_playlists.json'
 
 
 class Evaluator:
-    def __init__(self, predicted_file: str):
-        self.predicted_file = predicted_file
+    def __init__(self, submission_file: str):
+        self.submission_file = submission_file
         self.golds = read_json(GOLD_FILE)
         self.preds = self.read_submission()
 
@@ -19,7 +19,7 @@ class Evaluator:
 
 
     def read_submission(self) -> Dict[int, List[str]]:
-        raw_data = open(self.predicted_file, 'r', encoding='utf8').read()
+        raw_data = open(self.submission_file, 'r', encoding='utf8').read()
 
         # get lines, remove empty break lines and strip
         raw_lines = list(map(lambda x: x.strip(), re.split('\n+', raw_data)))
@@ -76,7 +76,7 @@ class Evaluator:
         return np.mean(values)
 
 if __name__ == '__main__':
-    evaluator = Evaluator('submissions/item-based.csv.gz')
+    evaluator = Evaluator(f'../submissions/{sys.argv[1]}.csv.gz')
     print(evaluator.RPrecision())
     print(evaluator.NDCG())
     print(evaluator.clicks())
