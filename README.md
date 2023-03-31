@@ -81,7 +81,7 @@ Se recomienda utilizar para el `NeighbourModel` esta configuración de _batch_si
 |--------------|-------------|------|-------|
 | popularity   | 0.02        | 0.07 | 22.27 |
 | user (k=100) | 0.13        | 0.28 | 6.17  |
-| item (k=20)  | 0.12        | 0.24 | 8.76  |
+| item (k=20)  | 0.11        | 0.20 | 9.80  |
 
 
 
