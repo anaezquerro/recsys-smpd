@@ -7,7 +7,7 @@ Equipo:
 
 ## Modelos implementados
 
-- Modelo basado en popularidad ([baseline.py](models/baseline.py)]. 
+- Modelo basado en popularidad ([baseline.py](models/baseline.py)). 
 - Modelo basado en vecindarios ([neighbour.py](models/neighbour.py)) de playlists (_user-based_) o de tracks (_item-based_).
 
 Para mayor información acerca de la implementación de los modelos se recomienda leer [models/README.md](models/README.md).
