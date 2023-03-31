@@ -1,55 +1,87 @@
-# *Iteración 0: Implementación de modelo basado en popularidad*
+# Modelos de Recomendación para el Spotify Million Playlist Dataset Challenge
+
 
 Equipo:
 - Ana Xiangning Pereira Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es)).
 - Pedro Souza López ([pedro.souza@udc.es](mailto:pedro.souza@udc.es)).
 
-## Explicación breve del código 
+## Modelos implementados
 
-El código adjunto a este README se organiza en tres archivos `.py`:
+- Modelo basado en popularidad ([baseline.py](models/baseline.py)]. 
+- Modelo basado en vecindarios ([neighbour.py](models/neighbour.py)) de playlists (_user-based_) o de tracks (_item-based_).
 
-- `baseline.py`: Contiene la implementación del modelo basado en popularidad. La clase
- `BaselineModel` permite _parsear_ el dataset, realizar el conteo de _tracks_ en paralelo,
-devolver recomendaciones para el conjunto de test (`spotify_test_playlists/`) y 
-exportar dichas recomendaciones en un archivo `csv.gz` en el 
-[formato del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#submission-format).
-- `evaluation.py`: La clase `Evaluator` soporta la lectura de una _submission_, así como
-del _ground truth_ (en formato JSON), para realizar la evaluación basada en las 
-[métricas del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#evaluation);
-RPrediction, NDCG y clicks.
-- `main.py`: Estructura el flujo de ejecución permitiendo ejecutar solamente los pasos deseados.
-Además, permite mostar los tiempos de ejecución de los distintos pasos.
+Para mayor información acerca de la implementación de los modelos se recomienda leer [models/README.md](models/README.md).
 
 ## Manual de uso
 
-Para utilizar las distintas funcionalidades del código se debe ejecutar el archivo `main.py`
- por línea de comandos, seguido de algunos argumentos que indican qué se va a 
- ejecutar y si se muestran o no los distintos tiempos de ejecución. 
+Para realizar las recomendaciones y evaluar los modelos se puede ejecutar directamente el archivo 
+[main.py](main.py) por línea de comandos, seguido de los siguientes argumentos:
 
-En caso de no añadir ningún argumento, se realizan los siguientes pasos:
+- `model`: Nombre del modelo que se quiere ejecutar (`base`, `user`, `item`).
+- `-eval`: Añadir el _flag_ para evaluar la _submission generada_.
 
-1. Conteo de los _tracks_ más populares del _dataset_ (`BaselineModel.train()`).
-2. Recomendación de los _tracks_ más populares que no se encuentren en las playlists de test
-   (`BaselineModel.predict()`).
-3. Almacenamiento de un fichero `.csv.gz` (por defecto `baseline.csv.gz`) en el formato de la _submission_.
-4. Evaluación del modelo a través de la lectura del fichero `.csv.gz` y del archivo JSON con el _ground thruth_ del 
-conjunto de test, haciendo uso de las métricas mencionadas anteriormente.
+A mayores se pueden añadir forma opcional los siguientes parámetros:
 
-De forma opcional se pueden añadir los siguientes argumentos:
+- `submit_path`: Ruta en la que se exportará la recomendación en el 
+[formato del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/). Por defecto
+  - En el `BaselineModel` se guardará como `submissions/base.csv.gz`.
+  - En el `NeighourModel` se guardará como `submissions/user.csv.gz` o `submissions/item.csv.gz`.
+- `num_threads`: Número de hilos que se utilizarán para paralelizar en todas las fases 
+predicción y recomendación. Por defecto:
+  - En el `BaselineModel` es el número de procesadores de la máquina
+  - En el `NeighourModel` para `sparsify` es el número de procesadores de la máquina, y para `recommend` es 8 al realizar los productos matriciales y el número de procesadores de la máquina para realizar la recomendación.
+- `time`: Valor booleano que indica si see quiere imprimir por pantalla o no los tiempos de ejecución. Por defecto `True`.
+- `verbose`: Valor booleano que indica si se quiere imprimir por pantalla un _trace_ de la ejecución. Por defecto `True`.
 
-- `-pred`: Se ejecutarán los pasos 1, 2 y 3.
-- `-eval`: Se ejecutará solamente el paso 4. Para que funcione es necesario haber generado previamente el archivo de la _submission_.
+Para `NeighbourModel` se añaden parámetros adicionales:
+- `action`: Para el modelo de vecindarios se ha separado la ejecución en dos fases: `sparsify` (para generar las matrices 
+_sparse_ del dataset y guardarlas) y `recommend` (para generar recomendacioes en base a un vecindario). Por defecto, `recommend`.
+- `batch_size`: Número de filas de la matriz con las que se paraleliza el cálculo de la similitud. Por defecto 500.
+- `k`: Número de vecinos a considerar la similitud en el modelo de vecindarios. Por defecto 100.
+- `train_path`: Ruta donde se guarda la matriz _sparse_ de entrenamiento.
+- `test_path`: Ruta donde se guarda la matriz _sparse_ de test.
+- `trackmap_path`: Ruta donde se guarda el diccionario que mapea _track_ URIs a columnas de las matrices _sparse_.
+- `matrix_path`: Ruta donde se guardará la matriz de _ratings_ estimados.
+- `load`: Valor booleano que indica si se debe cargar o no la matriz de _ratings_ estimados.
 
-Además, se le puede añadir:
+## Ejemplos de ejecuciones
 
-- `-t`: Se mostrarán los tiempos de ejecución de los pasos que se ejecuten.
-- `-out {path}`: Se guardará el archivo `csv.gz` en la ruta especificada.
+Para probar los dos modelos implementados se sugiere no alterar los parámetros que vienen por defecto (a excepción del 
+número de hilos y _batch_size_). A continuación se propone un ejemplo de ejecución por línea de comandos para probar 
+los dos modelos desde cero.
 
-Por ejemplo, para ejecutar todos los pasos (1-4) mostrando los tiempos de ejecución y guardando la _submission_ en 
-el fichero `iteration0.csv.gz` se debe ejecutar:
+Para probar el `BaselineModel`:
 
+```shell
+python3 main.py base -eval -t
 ```
-python3 main.py -t -out iteration0.csv.gz
+
+Para probar el `NeighbourModel`, primero generar las matrices _sparse_:
+
+```shell
+python3 main.py user --action sparsify -t -v
 ```
 
-La _submission_ obtenida se puede ver en este [enlace](https://udcgal-my.sharepoint.com/:u:/g/personal/ana_ezquerro_udc_es/EUYWqMoKcGlIpx-o6tkxUA0BVpkF2U9Mv1RLyz8CsMR9Eg?e=bTqvuL). 
+Y después se pueden probar los modelos _user_ e _item_ _based_:
+
+```shell
+python3 main.py user -eval --action recommend -t -v --k=100
+```
+
+```shell
+python3 main.py item -eval --action recommend -t -v --k=20 --batch_size=15000
+```
+
+Se recomienda utilizar para el `NeighbourModel` esta configuración de _batch_size_
+
+
+## Resultados 
+
+| Modelo       | R-Precision | nDCG | CRT   |
+|--------------|-------------|------|-------|
+| popularity   | 0.02        | 0.07 | 22.27 |
+| user (k=100) | 0.13        | 0.28 | 6.17  |
+| item (k=20)  | 0.11        | 0.20 | 9.80  |
+
+
+
