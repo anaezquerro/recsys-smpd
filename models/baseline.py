@@ -4,12 +4,8 @@ from typing import Dict, List, Callable
 from tqdm import tqdm
 from utils.tools import submit, coalesce, read_json
 from utils.constants import MAX_THREADS, TRAIN_FOLDER, N_RECS, TEST_FILE
-from models.abstract import Model
 
-
-
-
-class BaselineModel(Model):
+class BaselineModel:
 
     NAME = 'BaselineModel'
 
