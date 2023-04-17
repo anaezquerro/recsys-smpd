@@ -72,7 +72,7 @@ def neighbour(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('model', choices=['base', 'user', 'item'])
+    parser.add_argument('model', choices=['base', 'user', 'item'], default=None, nargs='?')
     parser.add_argument('-eval', action='store_true', default=False)
 
     # global arguments

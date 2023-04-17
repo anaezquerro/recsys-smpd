@@ -53,7 +53,7 @@ los dos modelos desde cero.
 Para probar el `BaselineModel`:
 
 ```shell
-python3 main.py base -eval -t
+python3 main.py base -eval -t -v
 ```
 
 Para probar el `NeighbourModel`, primero generar las matrices _sparse_:
@@ -81,11 +81,14 @@ Se recomienda realizar previamente una estimación de la configuración a utiliz
 En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezquerro_udc_es/EuDyme7p-uFPpVomMjwWkmgBhpUUz3clxkTMELy2J0BZjA?e=FOFokB) 
 se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 
-| Modelo       | R-Precision | nDCG | CRT   |
-|--------------|-------------|------|-------|
-| popularity   | 0.02        | 0.07 | 22.27 |
-| user (k=100) | 0.13        | 0.28 | 6.17  |
-| item (k=20)  | 0.11        | 0.20 | 9.80  |
+| Modelo          | R-Precision | nDCG | CRT   |
+|-----------------|-------------|------|-------|
+| popularity      | 0.02        | 0.09 | 17.33 |
+| user (k=100)    | 0.16        | 0.32 | 4.74  |
+| item (k=20)     | 0.13        | 0.23 | 7.44  |
+| puresvd (k=10)  |             |      |       |  
+| puresvd (k=50)  |             |      |       |  
+| puresvd (k=1-0) |             |      |       |  
 
 
 
