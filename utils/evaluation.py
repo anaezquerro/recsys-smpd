@@ -76,7 +76,7 @@ class Evaluator:
         return np.mean(values)
 
 if __name__ == '__main__':
-    evaluator = Evaluator(f'../submissions/{sys.argv[1]}.csv.gz')
+    evaluator = Evaluator(f'submissions/{sys.argv[1]}.csv.gz')
     print(evaluator.RPrecision())
     print(evaluator.NDCG())
     print(evaluator.clicks())

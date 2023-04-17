@@ -22,6 +22,15 @@ def read_json(path: str, funct: Callable = set) -> Dict[int, List[str]]:
         playlists[int(playlist['pid'])] = funct(map(lambda track: track['track_uri'], playlist['tracks']))
     return playlists
 
+def pop_empty(playlists: Dict[int, List[str]]):
+    test_empty = list()
+    for pid in set(playlists.keys()):
+        if len(playlists[pid]) == 0:
+            test_empty.append(pid)
+            playlists.pop(pid)
+    return test_empty
+
+
 
 def flatten(list_of_lists, levels=None):
     items = list()

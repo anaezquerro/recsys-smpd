@@ -183,7 +183,7 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     b = v.shape[0]
 
     # compute v * t(Rtrain) ~ [batch_size, m_train]
-    sim = v.dot(Rtrain.transpose())
+    sim = v.dot(Rtrain.T.tocsr())
 
     # normalize with the norm2
     sim = sim.multiply(1 / Ntrain)
@@ -202,7 +202,7 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
         print(f'Item similarity of item {i}/{Rtrain.shape[1]}')
 
     # v ~ [batch_size, n_tracks]
-    v = Rtrain.transpose()[i:(i + batch_size), :]
+    v = Rtrain.T.tocsr()[i:(i + batch_size), :]
     b = v.shape[0]
 
     # compute v * Rtrain ~ [batch_size, n_tracks]
@@ -223,7 +223,7 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
 
 def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], verbose: bool) -> Dict[int, List[int]]:
     playlists = dict()
-    info = lambda i: print(f'Computing recommendation for playlist {i}/{len(playlists)}') if (i%100==0) and verbose else None
+    info = lambda i: print(f'Computing recommendation for playlist {i}/{len(test)}') if (i%100==0) and verbose else None
     for i, pid in enumerate(test.keys()):
         info(i)
         ratings = Rest.getrow(pidmap[pid])
