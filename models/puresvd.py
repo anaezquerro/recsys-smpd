@@ -97,14 +97,13 @@ class PureSVD:
 
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
+            indexes = coalesce(len(test), num_threads)
 
-            for i in range(0, len(test), batch_size):
+            for i in range(num_threads):
+                start, end = indexes[i], indexes[i+1]
                 futures.append(
-                    pool.submit(
-                        recommend,
-                        i, batch_size,
-                        self.Utest, self.S, self.V, test, pidmap, verbose
-                    ))
+                    pool.submit(recommend, start, end, batch_size, self.Utest, self.S, self.V, test, pidmap, verbose)
+                )
 
             playlists = futures.pop(0).result()
             for _ in range(len(futures)):
@@ -122,8 +121,28 @@ class PureSVD:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
 
+def recommend(start: int, end: int, batch_size: int,
+              Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
+              pidmap: Dict[int, int], verbose: bool):
+    playlists = dict()
 
-def recommend(i: int, batch_size: int, Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
+    for i in range(start, end, batch_size):
+        if verbose:
+            print(f'Computing recommendation for playlist {i-start}/{end-start}')
+        u = Utest[i:(i+batch_size)]
+        ratings = u @ (np.diag(S) @ V.T)
+        ratings[np.isclose(ratings, 0, atol=1e-5)] = 0
+        ratings = csr_matrix(ratings)
+        for j in range(i, i+u.shape[0]):
+            ratings[j - i, test.pop(pidmap[j])] = 0
+            values, cols = ratings[j - i].data, ratings[j - i].indices
+            playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
+    return playlists
+
+
+
+
+def _recommend(i: int, batch_size: int, Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
               pidmap: Dict[int, int], verbose: bool):
     playlists = dict()
     if verbose:
@@ -144,11 +163,17 @@ def recommend(i: int, batch_size: int, Utest: np.ndarray, S: np.ndarray, V: np.n
 
 if __name__ == '__main__':
     start = time.time()
-    model = PureSVD(hidden_dim=50, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
-    Rest = model.factorize()
-    model.recommend('submissions/puresvd.csv.gz', 100, 6, verbose=True)
-    end = time.time()
-    print(f'Computing time: {end-start}')
+    config = {
+        10: dict(batch_size=100, num_threads=10),
+        50: dict(batch_size=100, num_threads=10),
+        100: dict(batch_size=100, num_threads=5)
+    }
+    for h in [100]:
+        model = PureSVD(hidden_dim=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
+        Rest = model.factorize()
+        model.recommend(f'submissions/puresvd{h}.csv.gz', **config[h], verbose=True)
+        end = time.time()
+        print(f'Computing time: {end-start}')
 
 
 

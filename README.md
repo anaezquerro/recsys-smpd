@@ -17,8 +17,10 @@ Para mayor información acerca de la implementación de los modelos se recomiend
 Para realizar las recomendaciones y evaluar los modelos se puede ejecutar directamente el archivo 
 [main.py](main.py) por línea de comandos, seguido de los siguientes argumentos:
 
-- `model`: Nombre del modelo que se quiere ejecutar (`base`, `user`, `item`).
-- `-eval`: Añadir el _flag_ para evaluar la _submission generada_.
+- `model`: Nombre del modelo que se quiere ejecutar. Las opciones son `base`, `user`, `item`, `puresvd` (obsérvese que 
+sólo se puede especificar una y en caso de no especificar ninguna no se ejecutará ningún modelo).
+- `-eval`: Al añadir el _flag_ se realiza la evlauación de la _submission_ generada (especificada en el argument
+`submit_path`).
 
 A mayores se pueden añadir forma opcional los siguientes parámetros:
 
@@ -86,9 +88,9 @@ se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 | popularity      | 0.02        | 0.09 | 17.33 |
 | user (k=100)    | 0.16        | 0.32 | 4.74  |
 | item (k=20)     | 0.13        | 0.23 | 7.44  |
-| puresvd (k=10)  |             |      |       |  
-| puresvd (k=50)  |             |      |       |  
-| puresvd (k=1-0) |             |      |       |  
+| puresvd (k=10)  | 0.08        | 0.21 | 10.13 |  
+| puresvd (k=50)  | 0.12        | 0.27 | 6.55  |  
+| puresvd (k=100) | 0.12        | 0.28 | 5.79  |  
 
 
 
