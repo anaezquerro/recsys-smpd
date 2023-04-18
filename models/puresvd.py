@@ -11,16 +11,23 @@ class PureSVD:
 
     NAME = 'PureSVD'
 
-    def __init__(self, hidden_dim: int, use_test: bool, train_path: str, test_path: str, trackmap_path: str):
+    def __init__(
+            self,
+            h: int,
+            use_test: bool,
+            train_path: str,
+            test_path: str,
+            trackmap_path: str
+    ):
         """
         Initialization of the PureSVD model.
-        :param hidden_dim: Dimension of the latent space.
+        :param h: Dimension of the latent space.
         :param use_test: Boolean parameter to use the test matrix or not.
         :param train_path: Path where sparse train matrix is stored.
         :param test_path: Path where sparse test matrix is stored.
         :param trackmap_path: Path where the map from track URIs to columns in the matrix is stored in.
         """
-        self.hidden_dim = hidden_dim
+        self.h = h
         self.use_test = use_test
         self.train_path = train_path
         self.test_path = test_path
@@ -31,7 +38,7 @@ class PureSVD:
     def factorize(self, U_path: str = None, S_path: str = None, V_path: str = None):
         """
         Applies matrix factorization to obtain U, S and V matrices.
-        :param U_path: Path to store U matrix.
+        :param U_path: Path to store U matrix (for test playlists).
         :param S_path: Path to store S matrix.
         :param V_path: Path to store V matrix.
         """
@@ -45,12 +52,12 @@ class PureSVD:
         del Rtrain, Rtest
 
         # R ~ [m, n]
-        # U ~ [m, hidden_dim]
-        # S ~ [hidden_dim, hidden_dim]
-        # V ~ [hidden_dim, n]
-        Ut, S, Vt = sparsesvd(R, self.hidden_dim)
+        # U ~ [m, h]
+        # S ~ [h, h]
+        # V ~ [h, n]
+        Ut, S, Vt = sparsesvd(R, self.h)
 
-        # now obtain Utest ~ [m_test, hidden_dim]
+        # now obtain Utest ~ [m_test, h]
         if self.use_test:
             Utest = Ut.T[-m_test:]
             del Ut
@@ -169,7 +176,7 @@ if __name__ == '__main__':
         100: dict(batch_size=100, num_threads=5)
     }
     for h in [100]:
-        model = PureSVD(hidden_dim=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
+        model = PureSVD(h=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
         Rest = model.factorize()
         model.recommend(f'submissions/puresvd{h}.csv.gz', **config[h], verbose=True)
         end = time.time()
