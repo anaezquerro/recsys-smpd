@@ -6,8 +6,9 @@ from concurrent.futures import ProcessPoolExecutor
 from utils.constants import N_RECS, TEST_FILE, INFO_ROW
 from utils.tools import coalesce, read_json, load_pickle, pop_empty
 import time
+from models.neighbour import csr_argsort
 
-class PureSVD:
+class PureSVDModel:
 
     NAME = 'PureSVD'
 
@@ -35,26 +36,28 @@ class PureSVD:
 
         self.Utest, self.S, self.V = None, None, None
 
-    def factorize(self, U_path: str = None, S_path: str = None, V_path: str = None):
+    def factorize(self, U_path: str, S_path: str, V_path: str, verbose: bool):
         """
         Applies matrix factorization to obtain U, S and V matrices.
         :param U_path: Path to store U matrix (for test playlists).
         :param S_path: Path to store S matrix.
         :param V_path: Path to store V matrix.
         """
+        if verbose:
+            print('Factorizing sparse matrices...')
         # load Rtrain and Rtest
         Rtrain = load_npz(self.train_path)
         Rtest = load_npz(self.test_path)
 
         # create R matrix using Rtest or not
         m_test = Rtest.shape[0]
-        R = vstack([Rtrain, Rtest]).tocsc() if self.use_test else Rtrain
+        R = vstack([Rtrain, Rtest]).tocsc() if self.use_test else Rtrain.tocsc()
         del Rtrain, Rtest
 
         # R ~ [m, n]
         # U ~ [m, h]
         # S ~ [h, h]
-        # V ~ [h, n]
+        # V ~ [n, h]
         Ut, S, Vt = sparsesvd(R, self.h)
 
         # now obtain Utest ~ [m_test, h]
@@ -64,7 +67,7 @@ class PureSVD:
         else:
             # project vectors
             Rtest = load_npz(self.test_path)
-            Utest = Rtest @ Vt
+            Utest = Rtest @ Vt.T
             del Rtest
 
         self.Utest = Utest
@@ -116,6 +119,7 @@ class PureSVD:
             for _ in range(len(futures)):
                 playlists |= futures.pop(0).result()
 
+
         # convert trackmap from id -> track_uri
         trackmap = {value: key for key, value in trackmap.items()}
 
@@ -140,30 +144,16 @@ def recommend(start: int, end: int, batch_size: int,
         ratings = u @ (np.diag(S) @ V.T)
         ratings[np.isclose(ratings, 0, atol=1e-5)] = 0
         ratings = csr_matrix(ratings)
+        ratings.remove_zeros()
+
+        ratings, _ = csr_argsort(ratings, N_RECS)
         for j in range(i, i+u.shape[0]):
-            ratings[j - i, test.pop(pidmap[j])] = 0
-            values, cols = ratings[j - i].data, ratings[j - i].indices
-            playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
+            playlists[pidmap.pop(j)] = ratings[j-i]
     return playlists
 
 
 
 
-def _recommend(i: int, batch_size: int, Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
-              pidmap: Dict[int, int], verbose: bool):
-    playlists = dict()
-    if verbose:
-        print(f'Computing recommendation for playlist {i}/{len(test)}')
-
-    u = Utest[i:(i+batch_size)]
-    ratings = u @ (np.diag(S) @ V.T)
-    ratings[np.isclose(ratings, 0, atol=1e-6)] = 0
-    ratings = csr_matrix(ratings)
-    for j in range(i, i+u.shape[0]):
-        ratings[j-i, test[pidmap[j]]] = 0
-        values, cols = ratings[j-i].data, ratings[j-i].indices
-        playlists[pidmap[j]] = cols[(-values).argsort().tolist()[:N_RECS]]
-    return playlists
 
 
 
@@ -176,7 +166,7 @@ if __name__ == '__main__':
         100: dict(batch_size=100, num_threads=5)
     }
     for h in [100]:
-        model = PureSVD(h=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
+        model = PureSVDModel(h=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
         Rest = model.factorize()
         model.recommend(f'submissions/puresvd{h}.csv.gz', **config[h], verbose=True)
         end = time.time()

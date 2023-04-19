@@ -6,7 +6,7 @@ from utils.tools import create_folder
 import time
 from models.neighbour import NeighbourModel
 from models.baseline import BaselineModel
-from models.puresvd import PureSVD
+from models.puresvd import PureSVDModel
 from utils.sparse import Sparse
 
 
@@ -25,6 +25,7 @@ def evaluator(args):
 
 def base(args):
     # preprocess some arguments
+    args.submit_path = args.submit_path if args.submit_path else f'submissions/base.csv.gz'
     args.num_threads = max(args.num_threads)
 
     model = BaselineModel()
@@ -47,6 +48,7 @@ def base(args):
 
 def neighbour(args):
     # preprocess some arguments
+    args.submit_path = args.submit_path if args.submit_path else f'submissions/{args.hood}.csv.gz'
     args.num_threads = (args.num_threads, args.num_threads) if len(args.num_threads) == 1 else args.num_threads[:2]
     [create_folder(path) for path in [args.matrix_path, args.train_path, args.test_path, args.trackmap_path]]
 
@@ -61,7 +63,7 @@ def neighbour(args):
 
     if 'recommend' in args.action:
         start = time.time()
-        model = NeighbourModel(args.model, args.k,
+        model = NeighbourModel(args.hood, args.k,
                                train_path=args.train_path, test_path=args.test_path, trackmap_path=args.trackmap_path)
         model.recommend(submit_path=args.submit_path, num_threads=args.num_threads, batch_size=args.batch_size,
                         matrix_path=args.matrix_path, load=args.load, verbose=args.verbose)
@@ -72,6 +74,7 @@ def neighbour(args):
 
 def puresvd(args):
     # preprocess some arguments
+    args.submit_path = args.submit_path if args.submit_path else f'submissions/puresvd{args.h}.csv.gz'
     args.num_threads = max(args.num_threads)
     for path in [args.train_path, args.test_path, args.trackmap_path, args.U_path, args.S_path, args.V_path]:
         create_folder(path)
@@ -87,9 +90,9 @@ def puresvd(args):
 
     if 'recommend' in args.action:
         start = time.time()
-        model = PureSVD(h=args.h, use_test=args.ftest,
-                        train_path=args.train_path, test_path=args.test_path, trackmap_path=args.trackmap_path)
-        model.factorize(U_path=args.U_path, S_path=args.S_path, V_path=args.V_path)
+        model = PureSVDModel(h=args.h, use_test=args.ftest,
+                             train_path=args.train_path, test_path=args.test_path, trackmap_path=args.trackmap_path)
+        model.factorize(U_path=args.U_path, S_path=args.S_path, V_path=args.V_path, verbose=args.verbose)
         model.recommend(submit_path=args.submit_path, num_threads=args.num_threads, batch_size=args.batch_size,
                         verbose=args.verbose)
         end = time.time()
@@ -134,13 +137,12 @@ if __name__ == '__main__':
 
     # add puresvd arguments
     puresvd_parser = subparsers.add_parser('puresvd', help='PureSVD model')
-    puresvd_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*',
-                        default=['recommend'])
+    puresvd_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*', default=['recommend'])
     puresvd_parser.add_argument('--h', type=int, default=10)
     puresvd_parser.add_argument('-ftest', action='store_true', default=False, help='whether to factorize using test sparse matrix')
     puresvd_parser.add_argument('--train_path', type=str, default='data/Rtrain.npz')
     puresvd_parser.add_argument('--test_path', type=str, default='data/Rtest.npz')
-    puresvd_parser.add_argument('--trackmap_path', type=str)
+    puresvd_parser.add_argument('--trackmap_path', type=str, default='data/trackmap.pickle')
     puresvd_parser.add_argument('--batch_size', type=int, default=100)
     puresvd_parser.add_argument('--U_path', type=str, default='data/U.npz')
     puresvd_parser.add_argument('--V_path', type=str, default='data/V.npz')
@@ -150,10 +152,6 @@ if __name__ == '__main__':
         add_global(subparser)
 
     args, unknown = parser.parse_known_args()
-    # create folder for submit path if needed
-    if args.model != 'eval':
-        args.submit_path = f'{SUBMISSION_FOLDER}/{args.model}.csv.gz' if not args.submit_path else args.submit_path
-        create_folder(args.submit_path)
 
     if args.model == 'base':
         base(args)
