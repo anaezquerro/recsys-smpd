@@ -75,6 +75,32 @@ Fases de la ejecución del modelo:
 2. `recommend`: Generación de la recomendación _user_ o _item_ _based_.
 
 
+## Modelo basado en SVD puro ([puresvd.py](puresvd.py))
 
 
+En el modelo basado en SVD puro es necesario también crear una matriz _sparse_ del conjunto de entrenamient y test. 
+Una vez con las matrices almacenadas, se puede obtener la matriz de _ratings_ estimada mediante dos métodos:
 
+1. Factorizando la matriz de entrenamiento (obteniendo así las matrices de proyección para proyectar la matriz de test).
+2. Factorizando ambas matrices (y la matriz proyectada de test se obtiene directamente).
+
+Notación del código:
+
+| Variable | Significado                                | Dimensiones      |
+|----------|--------------------------------------------|------------------|
+| `R`      | Matriz *sparse*                            | [`m`, `n`]       |
+| `U`      | Matriz proyectada a dimensión `h`          | [`m`, `h`]       |
+| `S`      | Matriz diagonal                            | [`h`, `h`]       |
+| `V`      | Matriz de proyección                       | [`n`, `h`]       |
+| `Utest`  | Matriz de test proyectada a dimensión `h`  | [`m_test`, `h`]  | 
+
+
+Consideraciones de la implementación:
+
+- Para implementar la factorización se utilizó la librería [sparsesvd](https://pypi.org/project/sparsesvd/).
+- Para computar los _ratings_ estimados a partir de la matriz `Utest`, se paralelizó la multiplicación con `S` y `V`.
+
+Fases de la ejecución del modelo:
+
+- `sparsify`: Generación de las matrices _sparse_.
+- `recommend`: Generación de las recomendaciones.

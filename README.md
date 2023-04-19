@@ -53,9 +53,9 @@ del modelo. Nótese que:
 | `trackmap_path` |                           | `data/trackmap.pickle`      | `data/trackmap.pickle`                  |
 | `h`             |                           |                             | `10`                                    |
 | `-ftest`        |                           |                             | `False`                                 |     
-| `U_path`        |                           |                             | `data/U.npz`                            |
-| `V_path`        |                           |                             | `data/V.npz`                            |
-| `S_path`        |                           |                             | `data/S.npz`                            |
+| `U_path`        |                           |                             | `data/U.npy`                            |
+| `V_path`        |                           |                             | `data/V.npy`                            |
+| `S_path`        |                           |                             | `data/S.npy`                            |
 
 ---
 ## Ejemplos de ejecuciones
@@ -121,3 +121,5 @@ se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 | puresvd' (h=10) | 0.08        | 0.21         | 10.28 |
 | puresvd (h=50)  | 0.11        | 0.27         | 6.46  |
 | puresvd' (h=50) | 0.12        | 0.27         | 6.55  |
+
+**Nota**: En el modelo `puresvd` el apóstrofe indica que se utilizó la matriz de test para factorizar.
