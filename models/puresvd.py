@@ -107,17 +107,31 @@ class PureSVDModel:
 
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
-            indexes = coalesce(len(test), num_threads)
 
-            for i in range(num_threads):
-                start, end = indexes[i], indexes[i+1]
+            for i in range(0, len(test), batch_size):
                 futures.append(
-                    pool.submit(recommend, start, end, batch_size, self.Utest, self.S, self.V, test, pidmap, verbose)
+                    pool.submit(recommend, i, batch_size, self.Utest, self.S, self.V, test, pidmap, verbose)
                 )
 
             playlists = futures.pop(0).result()
             for _ in range(len(futures)):
                 playlists |= futures.pop(0).result()
+
+        # playlists = dict()
+        #
+        # for i in range(0, len(test), batch_size):
+        #     if verbose:
+        #         print(f'Computing recommendation for playlist {i}/{self.Utest.shape[0]}')
+        #     u = self.Utest[i:(i + batch_size)]
+        #     slice = u @ (np.diag(self.S) @ self.V.T)
+        #     slice[np.isclose(slice, 0, atol=1e-5)] = 0
+        #     slice = csr_matrix(slice)
+        #     for j in range(i, i + u.shape[0]):
+        #         ratings = slice.getrow(j - i)
+        #         ratings[:, test.pop(pidmap[j])] = 0
+        #         ratings.eliminate_zeros()
+        #         cols, values = ratings.indices, ratings.data
+        #         playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
 
 
         # convert trackmap from id -> track_uri
@@ -132,23 +146,23 @@ class PureSVDModel:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
 
-def recommend(start: int, end: int, batch_size: int,
+
+def recommend(i: int, batch_size: int,
               Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
               pidmap: Dict[int, int], verbose: bool):
     playlists = dict()
-
-    for i in range(start, end, batch_size):
-        if verbose:
-            print(f'Computing recommendation for playlist {i-start}/{end-start}')
-        u = Utest[i:(i+batch_size)]
-        ratings = u @ (np.diag(S) @ V.T)
-        ratings[np.isclose(ratings, 0, atol=1e-5)] = 0
-        ratings = csr_matrix(ratings)
-        ratings.remove_zeros()
-
-        ratings, _ = csr_argsort(ratings, N_RECS)
-        for j in range(i, i+u.shape[0]):
-            playlists[pidmap.pop(j)] = ratings[j-i]
+    if verbose:
+        print(f'Computing recommendation for playlist {i}/{Utest.shape[0]}')
+    u = Utest[i:(i + batch_size)]
+    slice = u @ (np.diag(S) @ V.T)
+    slice[np.isclose(slice, 0, atol=1e-5)] = 0
+    slice = csr_matrix(slice)
+    for j in range(i, i + u.shape[0]):
+        ratings = slice.getrow(j - i)
+        ratings[:, test.pop(pidmap[j])] = 0
+        ratings.eliminate_zeros()
+        cols, values = ratings.indices, ratings.data
+        playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
     return playlists
 
 

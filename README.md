@@ -39,25 +39,23 @@ del modelo. Nótese que:
 - Los *flags* van precedidos por un guión (-).
 - Las celdas en blanco indican que el parámetro no se usa para ese modelo en concreto.
 
-| Parámetro       | `base`                    | `neighbour`                 | `puresvd`                       |
-|-----------------|---------------------------|-----------------------------|---------------------------------|
-| `submit_path`   | `submissions/base.csv.gz` | `submissions/{hood}.csv.gz` | `submissions/puresvd{h}.csv.gz` |
-| `num_threads`   | `#proc`                   | `(8, #proc)`                | `#proc`                         |
-| `action`        |                           | `recommend`                 | `recommend`                     |
-| `batch_size`    |                           | `100`                       | `100`                           |
-| `k`             |                           | `100`                       |                                 |
-| `matrix_path`   |                           | `data/Rest.npz`             |                                 |
-| `-load`         |                           | `False`                     |                                 |
-| `train_path`    |                           | `data/Rtrain.npz`           | `data/Rtrain.npz`               |
-| `test_path`     |                           | `data/Rtest.npz`            | `data/Rtest.npz`                |
-| `trackmap_path` |                           | `data/trackmap.pickle`      | `data/trackmap.pickle`          |
-| `h`             |                           |                             | `10`                            |
-| `-ftest`        |                           |                             | `False`                         |     
-| `U_path`        |                           |                             | `data/U.npz`                    |
-| `V_path`        |                           |                             | `data/V.npz`                    |
-| `S_path`        |                           |                             | `data/S.npz`                    |
-
-El significado de cada parámetro está incluido en el código o en el siguiente archivo [PARAMETERS.md](PARAMETERS.md).
+| Parámetro       | `base`                    | `neighbour`                 | `puresvd`                               |
+|-----------------|---------------------------|-----------------------------|-----------------------------------------|
+| `submit_path`   | `submissions/base.csv.gz` | `submissions/{hood}.csv.gz` | `submissions/puresvd{ftest}-{h}.csv.gz` |
+| `num_threads`   | `#proc`                   | `(8, #proc)`                | `#proc`                                 |
+| `action`        |                           | `recommend`                 | `recommend`                             |
+| `batch_size`    |                           | `100`                       | `100`                                   |
+| `k`             |                           | `100`                       |                                         |
+| `matrix_path`   |                           | `data/Rest.npz`             |                                         |
+| `-load`         |                           | `False`                     |                                         |
+| `train_path`    |                           | `data/Rtrain.npz`           | `data/Rtrain.npz`                       |
+| `test_path`     |                           | `data/Rtest.npz`            | `data/Rtest.npz`                        |
+| `trackmap_path` |                           | `data/trackmap.pickle`      | `data/trackmap.pickle`                  |
+| `h`             |                           |                             | `10`                                    |
+| `-ftest`        |                           |                             | `False`                                 |     
+| `U_path`        |                           |                             | `data/U.npz`                            |
+| `V_path`        |                           |                             | `data/V.npz`                            |
+| `S_path`        |                           |                             | `data/S.npz`                            |
 
 ---
 ## Ejemplos de ejecuciones
@@ -104,7 +102,7 @@ python3 main.py puresvd -eval --action recommend -t -v --h=10 --batch_size=100 -
 Utilizando la matriz de test para factorizar con 10 factores latentes:
 
 ```shell
-python3 main.py puresvd -ftest -eval --action recommend -t -v --h=10 --batch_size=100 --num_threads=7
+python3 main.py puresvd -ftest -eval --action recommend -t -v --h=10 --batch_size=100 --num_threads=10
 ```
 
 
@@ -113,14 +111,18 @@ python3 main.py puresvd -ftest -eval --action recommend -t -v --h=10 --batch_siz
 En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezquerro_udc_es/EuDyme7p-uFPpVomMjwWkmgBhpUUz3clxkTMELy2J0BZjA?e=FOFokB) 
 se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 
-| Modelo            | R-Precision | nDCG | CRT   |
-|-------------------|-------------|------|-------|
-| popularity        | 0.02        | 0.09 | 17.33 |
-| user (k=100)      | 0.16        | 0.32 | 4.74  |
-| item (k=20)       | 0.13        | 0.23 | 7.44  |
-| puresvd' (k=10)   | 0.08        | 0.21 | 10.28 |  
-| puresvd' (k=50)   | 0.12        | 0.27 | 6.55  |  
-| puresvd' (k=100)  | 0.12        | 0.28 | 5.79  |  
+
+| Modelo           | R-Precision | nDCG         | CRT   |
+|------------------|-------------|--------------|-------|
+| popularity       | 0.02        | 0.09         | 17.33 |
+| user (k=100)     | 0.16        | 0.32         | 4.74  |
+| item (k=20)      | 0.13        | 0.23         | 7.44  |
+| puresvd (k=10)   | 0.07        | 0.20         | 10.24 |  
+| puresvd (k=50)   | 0.11        | 0.27         | 6.46  |  
+| puresvd (k=100)  |             |              |       |  
+| puresvd' (k=10)  | 0.08        | 0.21         | 10.28 |  
+| puresvd' (k=50)  | 0.12        | 0.27         | 6.55  |  
+| puresvd' (k=100) | 0.13        | 0.29         | 5.79  |  
 
 
 

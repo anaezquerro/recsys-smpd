@@ -74,7 +74,7 @@ def neighbour(args):
 
 def puresvd(args):
     # preprocess some arguments
-    args.submit_path = args.submit_path if args.submit_path else f'submissions/puresvd{args.h}.csv.gz'
+    args.submit_path = args.submit_path if args.submit_path else f'submissions/puresvd{int(args.ftest)}-{args.h}.csv.gz'
     args.num_threads = max(args.num_threads)
     for path in [args.train_path, args.test_path, args.trackmap_path, args.U_path, args.S_path, args.V_path]:
         create_folder(path)
@@ -144,9 +144,9 @@ if __name__ == '__main__':
     puresvd_parser.add_argument('--test_path', type=str, default='data/Rtest.npz')
     puresvd_parser.add_argument('--trackmap_path', type=str, default='data/trackmap.pickle')
     puresvd_parser.add_argument('--batch_size', type=int, default=100)
-    puresvd_parser.add_argument('--U_path', type=str, default='data/U.npz')
-    puresvd_parser.add_argument('--V_path', type=str, default='data/V.npz')
-    puresvd_parser.add_argument('--S_path', type=str, default='data/S.npz')
+    puresvd_parser.add_argument('--U_path', type=str, default='data/U.npy')
+    puresvd_parser.add_argument('--V_path', type=str, default='data/V.npy')
+    puresvd_parser.add_argument('--S_path', type=str, default='data/S.npy')
 
     for subparser in [eval_parser, baseline_parser, neighbour_parser, puresvd_parser]:
         add_global(subparser)
