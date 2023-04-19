@@ -96,7 +96,7 @@ Se recomienda realizar previamente una estimación de la configuración a utiliz
 
 Sin utilizar la matriz de test para factorizar con 10 factores latentes:
 ```shell
-python3 main.py puresvd -eval --action recommend -t -v --h=10 --batch_size=100 --num_threads=10
+python3 main.py puresvd -eval --action recommend -t -v --h=10 --batch_size=50 --num_threads=10
 ```
 
 Utilizando la matriz de test para factorizar con 10 factores latentes:
@@ -112,17 +112,12 @@ En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezq
 se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 
 
-| Modelo           | R-Precision | nDCG         | CRT   |
-|------------------|-------------|--------------|-------|
-| popularity       | 0.02        | 0.09         | 17.33 |
-| user (k=100)     | 0.16        | 0.32         | 4.74  |
-| item (k=20)      | 0.13        | 0.23         | 7.44  |
-| puresvd (k=10)   | 0.07        | 0.20         | 10.24 |  
-| puresvd (k=50)   | 0.11        | 0.27         | 6.46  |  
-| puresvd (k=100)  |             |              |       |  
-| puresvd' (k=10)  | 0.08        | 0.21         | 10.28 |  
-| puresvd' (k=50)  | 0.12        | 0.27         | 6.55  |  
-| puresvd' (k=100) | 0.13        | 0.29         | 5.79  |  
-
-
-
+| Modelo          | R-Precision | nDCG         | CRT   |
+|-----------------|-------------|--------------|-------|
+| popularity      | 0.02        | 0.09         | 17.33 |
+| user (k=100)    | 0.16        | 0.32         | 4.74  |
+| item (k=20)     | 0.13        | 0.23         | 7.44  |
+| puresvd (h=10)  | 0.07        | 0.20         | 10.24 |  
+| puresvd' (h=10) | 0.08        | 0.21         | 10.28 |
+| puresvd (h=50)  | 0.11        | 0.27         | 6.46  |
+| puresvd' (h=50) | 0.12        | 0.27         | 6.55  |
