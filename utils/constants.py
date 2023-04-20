@@ -1,6 +1,6 @@
 import os
 
-INFO_ROW = 'sr-assignments, pedro-ana, ana.ezquerro@udc.es, pedro.souza@udc.es'
+INFO_ROW = 'team_info, PedroAna, ana.ezquerro@udc.es'
 TRAIN_FOLDER = 'spotify_train_dataset/data/'
 MAX_THREADS = os.cpu_count()
 TEST_FILE = 'spotify_test_playlists/test_input_playlists.json'

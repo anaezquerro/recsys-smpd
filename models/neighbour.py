@@ -186,8 +186,10 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     sim = v.dot(Rtrain.T.tocsr())
 
     # normalize with the norm2
-    sim = sim.multiply(1 / Ntrain)
+    # sim = sim.multiply(1 / Ntrain)
+    sim = sim.multiply(1/Ntrain)
     sim = sim.multiply(1 / Ntest[i:(i + batch_size)].reshape(b, 1))
+
 
     # store indices of the K similarities
     top_k, data = csr_argsort(csr_matrix(sim), k)

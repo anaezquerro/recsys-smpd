@@ -117,22 +117,6 @@ class PureSVDModel:
             for _ in range(len(futures)):
                 playlists |= futures.pop(0).result()
 
-        # playlists = dict()
-        #
-        # for i in range(0, len(test), batch_size):
-        #     if verbose:
-        #         print(f'Computing recommendation for playlist {i}/{self.Utest.shape[0]}')
-        #     u = self.Utest[i:(i + batch_size)]
-        #     slice = u @ (np.diag(self.S) @ self.V.T)
-        #     slice[np.isclose(slice, 0, atol=1e-5)] = 0
-        #     slice = csr_matrix(slice)
-        #     for j in range(i, i + u.shape[0]):
-        #         ratings = slice.getrow(j - i)
-        #         ratings[:, test.pop(pidmap[j])] = 0
-        #         ratings.eliminate_zeros()
-        #         cols, values = ratings.indices, ratings.data
-        #         playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
-
 
         # convert trackmap from id -> track_uri
         trackmap = {value: key for key, value in trackmap.items()}
@@ -155,7 +139,7 @@ def recommend(i: int, batch_size: int,
         print(f'Computing recommendation for playlist {i}/{Utest.shape[0]}')
     u = Utest[i:(i + batch_size)]
     slice = u @ (np.diag(S) @ V.T)
-    slice[np.isclose(slice, 0, atol=1e-5)] = 0
+    # slice[np.isclose(slice, 0, atol=1e-8)] = 0
     slice = csr_matrix(slice)
     for j in range(i, i + u.shape[0]):
         ratings = slice.getrow(j - i)
@@ -164,27 +148,6 @@ def recommend(i: int, batch_size: int,
         cols, values = ratings.indices, ratings.data
         playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
     return playlists
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-    start = time.time()
-    config = {
-        10: dict(batch_size=100, num_threads=10),
-        50: dict(batch_size=100, num_threads=10),
-        100: dict(batch_size=100, num_threads=5)
-    }
-    for h in [100]:
-        model = PureSVDModel(h=h, use_test=True, train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle')
-        Rest = model.factorize()
-        model.recommend(f'submissions/puresvd{h}.csv.gz', **config[h], verbose=True)
-        end = time.time()
-        print(f'Computing time: {end-start}')
 
 
 
