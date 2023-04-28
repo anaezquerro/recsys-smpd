@@ -4,10 +4,8 @@ from utils.constants import SUBMISSION_FOLDER, MAX_THREADS
 from utils.evaluation import Evaluator
 from utils.tools import create_folder
 import time
-from models.neighbour import NeighbourModel
-from models.baseline import BaselineModel
-from models.puresvd import PureSVDModel
 from utils.sparse import Sparse
+from models import BaselineModel, NeighbourModel, PureSVDModel, Track2VecModel
 
 
 def evaluator(args):
@@ -74,7 +72,8 @@ def neighbour(args):
 
 def puresvd(args):
     # preprocess some arguments
-    args.submit_path = args.submit_path if args.submit_path else f'submissions/puresvd{int(args.ftest)}-{args.h}.csv.gz'
+    if not args.submit_path:
+        args.submit_path = f'submissions/puresvd{int(args.ftest)}-{args.h}.csv.gz'
     args.num_threads = max(args.num_threads)
     for path in [args.train_path, args.test_path, args.trackmap_path, args.U_path, args.S_path, args.V_path]:
         create_folder(path)
@@ -101,12 +100,51 @@ def puresvd(args):
             print('-' * 80)
 
 
+def track2vec(args):
+    # preprocess some arguments
+    if not args.submit_path:
+        args.submit_path = f'submissions/track2vec.csv.gz'
+    for path in [args.train_path, args.test_path, args.trackmap_path, args.model_path]:
+        create_folder(path)
+
+    model = Track2VecModel(embed_dim=args.embed_dim, context_size=args.context_size, k=args.k,
+                           model_path=args.model_path, train_path=args.train_path, test_path=args.test_path,
+                           trackmap_path=args.trackmap_path)
+
+    i = 0
+    if 'train' in args.action:
+        start = time.time()
+        model.train(num_epochs=args.num_epochs, num_threads=args.num_threads[i], verbose=args.verbose)
+        end = time.time()
+        if args.time:
+            print('Training time:', end-start)
+            print('-' * 80)
+        i += 1
+    else:
+        model.load()
+
+    if 'recommend' in args.action:
+        start = time.time()
+        model.recommend(submit_path=args.submit_path, num_threads=args.num_threads[i], num_trees=args.num_trees,
+                        verbose=args.verbose)
+        end = time.time()
+        if args.time:
+            print('Recommending time:', end-start)
+            print('-' * 80)
+
+
+
 def add_global(subparser):
     subparser.add_argument('-eval', action='store_true', default=False, help='whether to output the evaluation')
     subparser.add_argument('-t', '--time', action='store_true', default=False, help='whether to display execution times')
     subparser.add_argument('-v', '--verbose', action='store_true', default=False, help='whether to display the trace of recommendation process')
     subparser.add_argument('-p', '--submit_path', default=None, help='where to store the submission')
     subparser.add_argument('-n', '--num_threads', type=int, nargs='*', default=(8, MAX_THREADS), help='number of threads to parallelize the execution')
+
+def add_paths(subparser):
+    subparser.add_argument('--train_path', type=str, default='data/Rtrain.npz', help='Path to store sparse train matrix')
+    subparser.add_argument('--test_path', type=str, default='data/Rtest.npz', help='Path to store sparse test matrix')
+    subparser.add_argument('--trackmap_path', type=str, default='data/trackmap.pickle', help='Path to store map from track URIs to indices')
 
 
 if __name__ == '__main__':
@@ -128,27 +166,35 @@ if __name__ == '__main__':
     neighbour_parser.add_argument('hood', choices=['user', 'item'], default='user', type=str, help='neighbourhood to user')
     neighbour_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*', default=['recommend'])
     neighbour_parser.add_argument('--k', type=int, default=100)
-    neighbour_parser.add_argument('--train_path', type=str, default='data/Rtrain.npz')
-    neighbour_parser.add_argument('--test_path', type=str, default='data/Rtest.npz')
-    neighbour_parser.add_argument('--trackmap_path', type=str, default='data/trackmap.pickle')
     neighbour_parser.add_argument('--batch_size', type=int, default=500)
     neighbour_parser.add_argument('--matrix_path', type=str, default='data/Rest.npz')
     neighbour_parser.add_argument('--load', action='store_true', default=False)
+    add_paths(neighbour_parser)
 
     # add puresvd arguments
     puresvd_parser = subparsers.add_parser('puresvd', help='PureSVD model')
     puresvd_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*', default=['recommend'])
     puresvd_parser.add_argument('--h', type=int, default=10)
     puresvd_parser.add_argument('-ftest', action='store_true', default=False, help='whether to factorize using test sparse matrix')
-    puresvd_parser.add_argument('--train_path', type=str, default='data/Rtrain.npz')
-    puresvd_parser.add_argument('--test_path', type=str, default='data/Rtest.npz')
-    puresvd_parser.add_argument('--trackmap_path', type=str, default='data/trackmap.pickle')
     puresvd_parser.add_argument('--batch_size', type=int, default=100)
     puresvd_parser.add_argument('--U_path', type=str, default='data/U.npy')
     puresvd_parser.add_argument('--V_path', type=str, default='data/V.npy')
     puresvd_parser.add_argument('--S_path', type=str, default='data/S.npy')
+    add_paths(puresvd_parser)
 
-    for subparser in [eval_parser, baseline_parser, neighbour_parser, puresvd_parser]:
+    # add embed arguments
+    track2vec_parser = subparsers.add_parser('embed', help='Track2Vec model')
+    track2vec_parser.add_argument('--action', choices=['train', 'recommend'], type=str, nargs='*', default=['recommend'])
+    track2vec_parser.add_argument('--embed_dim', type=int, default=50, help='Vector size used in the space model')
+    track2vec_parser.add_argument('--context_size', type=int, default=10, help='Context size used for training vector weights')
+    track2vec_parser.add_argument('--k', type=int, default=10, help='Neighbourhood size')
+    track2vec_parser.add_argument('--model_path', type=str, default='data/track2vec', help='Path to store Gensim model')
+    track2vec_parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs in training')
+    track2vec_parser.add_argument('--num_trees', type=int, default=50, help='Number of trees for the Annoy Index')
+    add_paths(track2vec_parser)
+
+
+    for subparser in [eval_parser, baseline_parser, neighbour_parser, puresvd_parser, track2vec_parser]:
         add_global(subparser)
 
     args, unknown = parser.parse_known_args()
@@ -159,6 +205,8 @@ if __name__ == '__main__':
         neighbour(args)
     elif args.model == 'puresvd':
         puresvd(args)
+    elif args.model == 'track2vec':
+
     elif args.model == 'eval':
         evaluator(args)
 

@@ -9,8 +9,8 @@ from concurrent.futures import ProcessPoolExecutor
 from gensim.similarities.annoy import AnnoyIndexer
 from models.neighbour import recommend
 
-class EmbedModel:
-    def __init__(self, embed_dim: int, context_size: int, k: int, model_path: str, train_path: str, test_path: str, trackmap_path: str, load: bool):
+class Track2VecModel:
+    def __init__(self, embed_dim: int, context_size: int, k: int, model_path: str, train_path: str, test_path: str, trackmap_path: str):
         self.embed_dim = embed_dim
         self.context_size = context_size
         self.model_path = model_path
@@ -18,9 +18,9 @@ class EmbedModel:
         self.test_path = test_path
         self.trackmap_path = trackmap_path
         self.k = k
-        if load:
-            self.model = Word2Vec.load(model_path)
 
+    def load(self):
+        self.model = Word2Vec.load(self.model_path)
 
     def train(self, num_epochs: int, num_threads: int, verbose: bool):
         if verbose:
@@ -125,9 +125,9 @@ def similarity(tracks: List[int], model: Word2Vec, num_trees: int, k: int, n_tra
 
 
 if __name__ == '__main__':
-    model = EmbedModel(embed_dim=100, context_size=20, model_path='data/track2vec',
-                       train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle',
-                       k=10, load=True)
+    model = Track2VecModel(embed_dim=100, context_size=20, model_path='data/track2vec',
+                           train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle',
+                           k=10, load=True)
     # model.train(num_epochs=2, num_threads=10, verbose=True)
     model.recommend('submissions/embed.csv.gz', num_threads=2, num_trees=10, verbose=True)
 
