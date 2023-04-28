@@ -6,7 +6,6 @@ from concurrent.futures import ProcessPoolExecutor
 from utils.constants import N_RECS, TEST_FILE, INFO_ROW
 from utils.tools import coalesce, read_json, load_pickle, pop_empty
 import time
-from models.neighbour import csr_argsort
 
 class PureSVDModel:
 
@@ -140,7 +139,8 @@ def recommend(i: int, batch_size: int,
     u = Utest[i:(i + batch_size)]
     slice = u @ (np.diag(S) @ V.T)
     slice[np.isclose(slice, 0, atol=1e-8)] = 0
-    slice = csr_matrix(slice)
+    slice = csr_matrix(slice, dtype=np.float32)
+
     for j in range(i, i + u.shape[0]):
         pid = pidmap.pop(j)
         included = test.pop(pid)

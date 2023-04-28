@@ -114,7 +114,7 @@ class Sparse:
 
         # save sparse matrix
         (rows, cols), data = map(np.array, (rows, cols)), np.ones(len(rows))
-        matrix = csr_matrix((data, (rows, cols)), shape=(len(relations), self.n_tracks))
+        matrix = csr_matrix((data, (rows, cols)), shape=(len(relations), self.n_tracks), dtype=np.float32)
         save_npz(path, matrix)
 
 

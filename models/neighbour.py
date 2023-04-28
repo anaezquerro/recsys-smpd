@@ -197,7 +197,7 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
     data = data.flatten().tolist()
-    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]))
+    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]), dtype=np.float32)
 
 def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.ndarray, k: int, verbose: bool):
     if verbose:
@@ -215,13 +215,13 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     sim = sim.multiply(1 / Ntracks[i:(i + batch_size)].reshape(b, 1))
 
     # store indices of the K similarities
-    sim = csr_matrix(sim)
+    sim = csr_matrix(sim, dtype=np.float32)
     top_k, data = csr_argsort(sim, k, remov_diag=i)
 
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
     data = data.flatten().tolist()
-    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
+    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]), dtype=np.float32)
 
 def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], popular: np.array, verbose=True) -> Dict[int, List[int]]:
     playlists = dict()

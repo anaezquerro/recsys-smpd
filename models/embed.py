@@ -128,6 +128,6 @@ if __name__ == '__main__':
     model = EmbedModel(embed_dim=100, context_size=20, model_path='data/track2vec',
                        train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle',
                        k=10, load=False)
-    model.train(num_epochs=100, num_threads=10, verbose=True)
+    model.train(num_epochs=2, num_threads=10, verbose=True)
     model.recommend('submissions/embed.csv.gz', num_threads=10, num_trees=100, verbose=True)
 
