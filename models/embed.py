@@ -109,10 +109,10 @@ class EmbedModel:
 
 
 def similarity(tracks: List[int], model: Word2Vec, num_trees: int, k: int, n_tracks: int, verbose: bool):
-    annoy_index = AnnoyIndexer(model, num_trees)
     rows, cols, data = list(), list(), list()
     if verbose:
         print(f'Computing similarity for track {tracks[0]}/{n_tracks}')
+    annoy_index = AnnoyIndexer(model, num_trees)
     sim = list(map(lambda track: zip(*model.wv.most_similar([model.wv[track]], topn=k, indexer=annoy_index)), tracks))
     for i, (indices, values) in enumerate(sim):
         rows += [i]*len(values)
@@ -127,7 +127,7 @@ def similarity(tracks: List[int], model: Word2Vec, num_trees: int, k: int, n_tra
 if __name__ == '__main__':
     model = EmbedModel(embed_dim=100, context_size=20, model_path='data/track2vec',
                        train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle',
-                       k=10, load=False)
-    model.train(num_epochs=2, num_threads=10, verbose=True)
-    model.recommend('submissions/embed.csv.gz', num_threads=10, num_trees=100, verbose=True)
+                       k=10, load=True)
+    # model.train(num_epochs=2, num_threads=10, verbose=True)
+    model.recommend('submissions/embed.csv.gz', num_threads=2, num_trees=10, verbose=True)
 
