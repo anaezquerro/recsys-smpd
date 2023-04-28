@@ -110,7 +110,7 @@ class PureSVDModel:
 
             for i in range(0, len(test), batch_size):
                 futures.append(
-                    pool.submit(recommend, i, batch_size, self.Utest, self.S, self.V, test, pidmap, verbose)
+                    pool.submit(recommend, i, batch_size, self.Utest, self.S, self.V, test, pidmap, popular, verbose)
                 )
 
             playlists = futures.pop(0).result()
@@ -133,20 +133,26 @@ class PureSVDModel:
 
 def recommend(i: int, batch_size: int,
               Utest: np.ndarray, S: np.ndarray, V: np.ndarray, test: Dict[int, List[int]],
-              pidmap: Dict[int, int], verbose: bool):
+              pidmap: Dict[int, int], popular: np.ndarray, verbose: bool):
     playlists = dict()
     if verbose:
         print(f'Computing recommendation for playlist {i}/{Utest.shape[0]}')
     u = Utest[i:(i + batch_size)]
     slice = u @ (np.diag(S) @ V.T)
-    # slice[np.isclose(slice, 0, atol=1e-8)] = 0
+    slice[np.isclose(slice, 0, atol=1e-8)] = 0
     slice = csr_matrix(slice)
     for j in range(i, i + u.shape[0]):
+        pid = pidmap.pop(j)
+        included = test.pop(pid)
         ratings = slice.getrow(j - i)
-        ratings[:, test.pop(pidmap[j])] = 0
+        ratings[:, included] = 0
         ratings.eliminate_zeros()
         cols, values = ratings.indices, ratings.data
-        playlists[pidmap.pop(j)] = cols[(-values).argsort().tolist()[:N_RECS]]
+        playlists[pid] = cols[(-values).argsort().tolist()[:N_RECS]].tolist()
+        if len(playlists[pid]) < N_RECS:
+            news = (np.setdiff1d(popular, np.array(playlists[pid]+included)))[:(N_RECS-len(playlists[pid]))]
+            playlists[pid] += news.tolist()
+
     return playlists
 
 

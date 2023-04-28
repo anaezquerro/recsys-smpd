@@ -2,6 +2,7 @@ import os
 from typing import List, Dict, Callable, Iterable
 import json, pickle
 from utils.constants import INFO_ROW
+from scipy.sparse import csr_matrix
 
 def coalesce(N: int, num_threads: int) -> list:
     n_tasks = N//num_threads
@@ -65,3 +66,9 @@ def create_folder(path: str):
     folder = '/'.join(path.split('/')[:-1])
     if len(folder) > 0 and not os.path.exists(folder):
         os.makedirs(folder)
+
+
+def tolist(matrix: csr_matrix) -> List[List[int]]:
+    indptr = matrix.indptr.tolist()
+    matrix = [matrix.indices[indptr[i]:indptr[i + 1]].tolist() for i in range(len(indptr) - 1)]
+    return matrix

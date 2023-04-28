@@ -112,14 +112,14 @@ En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezq
 se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 
 
-| Modelo          | R-Precision | nDCG         | clicks |
-|-----------------|-------------|--------------|--------|
-| popularity      | 0.02        | 0.09         | 17.33  |
-| user (k=100)    | 0.16        | 0.32         | 4.75    |
-| item (k=20)     | 0.13        | 0.23         | 7.44   |
-| puresvd (h=10)  | 0.07        | 0.20         | 10.24  |  
-| puresvd' (h=10) | 0.08        | 0.21         | 10.28  |
-| puresvd (h=50)  | 0.11        | 0.27         | 6.46   |
-| puresvd' (h=50) | 0.12        | 0.27         | 6.55   |
+| Modelo          | R-Precision | nDCG | clicks |
+|-----------------|-------------|------|--------|
+| popularity      | 0.02        | 0.09 | 17.33  |
+| user (k=100)    | 0.16        | 0.32 | 4.74   |
+| item (k=20)     | 0.13        | 0.25 | 5.98   |
+| puresvd (h=10)  | 0.07        | 0.20 | 10.24  |  
+| puresvd' (h=10) | 0.08        | 0.21 | 10.28  |
+| puresvd (h=50)  | 0.11        | 0.27 | 6.46   |
+| puresvd' (h=50) | 0.12        | 0.27 | 6.55   |
 
 **Nota**: En el modelo `puresvd` el apóstrofe indica que se utilizó la matriz de test para factorizar.

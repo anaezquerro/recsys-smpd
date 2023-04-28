@@ -75,7 +75,7 @@ class NeighbourModel:
                 futures.append(
                     pool.submit(
                         recommend,
-                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, verbose)
+                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, verbose)
                 )
 
             playlists = futures.pop(0).result()
@@ -223,7 +223,7 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     data = data.flatten().tolist()
     return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
 
-def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], verbose: bool) -> Dict[int, List[int]]:
+def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], popular: np.array, verbose=True) -> Dict[int, List[int]]:
     playlists = dict()
     info = lambda i: print(f'Computing recommendation for playlist {i}/{len(test)}') if (i%100==0) and verbose else None
     for i, pid in enumerate(test.keys()):
@@ -232,12 +232,15 @@ def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, in
         ratings[:, test[pid]] = 0
         ratings.eliminate_zeros()
         ratings, cols = ratings.data, ratings.indices
-        playlists[pid] = cols[(-ratings).argsort().tolist()[:N_RECS]]
+        playlists[pid] = cols[(-ratings).argsort().tolist()[:N_RECS]].tolist()
+        if len(playlists[pid]) < N_RECS:
+            news = np.setdiff1d(popular, np.array(playlists[pid] + test[pid]))[:(N_RECS-len(playlists[pid]))]
+            playlists[pid] += news.tolist()
     return playlists
 
 
 if __name__ == '__main__':
-    train_path, test_path, trackmap_path = 'data/Rtrain.npz', 'data/Rtest.npz', 'trackmap.pickle'
+    train_path, test_path, trackmap_path = 'data/Rtrain.npz', 'data/Rtest.npz', 'data/trackmap.pickle'
 
     if sys.argv[1] == 'user':
         model = NeighbourModel('user', 100, train_path, test_path, trackmap_path)
@@ -251,6 +254,6 @@ if __name__ == '__main__':
 
     start = time.time()
     model.recommend(f'submissions/{sys.argv[1]}-based.csv.gz', batch_size=batch_size, num_threads=(8, 12),
-                    matrix_path=f'Rest-{sys.argv[1]}.npz', load=True, verbose=True)
+                    matrix_path=f'data/Rest.npz', load=True, verbose=True)
     end = time.time()
     print(f'Recommendation time: {end-start}')
