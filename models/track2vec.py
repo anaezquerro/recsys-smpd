@@ -35,7 +35,7 @@ class Track2VecModel:
         self.model.save(self.model_path)
 
 
-    def item_similarity(self, num_trees: int, num_threads: int, verbose: int) -> csr_matrix:
+    def item_similarity(self, batch_size: int, num_threads: int, verbose: int) -> csr_matrix:
         n_tracks = load_npz(self.train_path).shape[1]
 
         if verbose:
@@ -43,12 +43,10 @@ class Track2VecModel:
 
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
-            indexes = coalesce(n_tracks, num_threads)
 
-            for i in range(num_threads):
-                start, end = indexes[i], min(indexes[i+1], n_tracks)
+            for i in range(0, n_tracks, batch_size):
                 futures.append(
-                    pool.submit(similarity, list(range(start, end)), self.model, num_trees, self.k, n_tracks, verbose)
+                    pool.submit(similarity, list(range(i, i+batch_size)), self.model, self.k, n_tracks, verbose)
                 )
 
             S = futures.pop(0).result()
@@ -57,9 +55,9 @@ class Track2VecModel:
 
         return S
 
-    def recommend(self, submit_path: str, num_threads: int, num_trees: int, verbose: bool):
+    def recommend(self, submit_path: str, num_threads: int, batch_size: int, verbose: bool):
         # first we must compute the similarity matrix
-        S = self.item_similarity(num_trees, num_threads, verbose)
+        S = self.item_similarity(batch_size, num_threads, verbose)
 
         # now obtain the estimated ratings
         Rtest = load_npz(self.test_path)
@@ -108,18 +106,16 @@ class Track2VecModel:
 
 
 
-def similarity(tracks: List[int], model: Word2Vec, num_trees: int, k: int, n_tracks: int, verbose: bool):
+def similarity(tracks: List[int], model: Word2Vec, k: int, n_tracks: int, verbose: bool):
     rows, cols, data = list(), list(), list()
     if verbose:
         print(f'Computing similarity for track {tracks[0]}/{n_tracks}')
-    annoy_index = AnnoyIndexer(model, num_trees)
-    sim = list(map(lambda track: zip(*model.wv.most_similar([model.wv[track]], topn=k, indexer=annoy_index)), tracks))
-    for i, (indices, values) in enumerate(sim):
-        rows += [i]*len(values)
-        cols += indices
-        data += values
-    S = csr_matrix((data, (rows, cols)), shape=(len(tracks), n_tracks))
-    return S
+    for i, track in enumerate(tracks):
+        top_k, sim_values = zip(*model.wv.most_similar([model.wv[track]], topn=k))
+        rows += [i]*len(sim_values)
+        cols += top_k
+        data += sim_values
+    return csr_matrix((data, (rows, cols)), shape=(len(tracks), n_tracks))
 
 
 
@@ -127,7 +123,9 @@ def similarity(tracks: List[int], model: Word2Vec, num_trees: int, k: int, n_tra
 if __name__ == '__main__':
     model = Track2VecModel(embed_dim=100, context_size=20, model_path='data/track2vec',
                            train_path='data/Rtrain.npz', test_path='data/Rtest.npz', trackmap_path='data/trackmap.pickle',
-                           k=10, load=True)
-    # model.train(num_epochs=2, num_threads=10, verbose=True)
-    model.recommend('submissions/embed.csv.gz', num_threads=2, num_trees=10, verbose=True)
+                           k=10)
+    model.load()
+    start = time.time()
+    model.recommend('submissions/embed.csv.gz', batch_size=500, num_threads=10, verbose=True)
+    end = time.time()
 

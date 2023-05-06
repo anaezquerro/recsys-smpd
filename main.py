@@ -125,8 +125,8 @@ def track2vec(args):
 
     if 'recommend' in args.action:
         start = time.time()
-        model.recommend(submit_path=args.submit_path, num_threads=args.num_threads[i], num_trees=args.num_trees,
-                        verbose=args.verbose)
+        model.recommend(submit_path=args.submit_path, num_threads=args.num_threads[i],
+                        batch_size=args.batch_size, verbose=args.verbose)
         end = time.time()
         if args.time:
             print('Recommending time:', end-start)
@@ -182,8 +182,8 @@ if __name__ == '__main__':
     puresvd_parser.add_argument('--S_path', type=str, default='data/S.npy')
     add_paths(puresvd_parser)
 
-    # add embed arguments
-    track2vec_parser = subparsers.add_parser('embed', help='Track2Vec model')
+    # add track2vec arguments
+    track2vec_parser = subparsers.add_parser('track2vec', help='Track2Vec model')
     track2vec_parser.add_argument('--action', choices=['train', 'recommend'], type=str, nargs='*', default=['recommend'])
     track2vec_parser.add_argument('--embed_dim', type=int, default=50, help='Vector size used in the space model')
     track2vec_parser.add_argument('--context_size', type=int, default=10, help='Context size used for training vector weights')
@@ -191,6 +191,7 @@ if __name__ == '__main__':
     track2vec_parser.add_argument('--model_path', type=str, default='data/track2vec', help='Path to store Gensim model')
     track2vec_parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs in training')
     track2vec_parser.add_argument('--num_trees', type=int, default=50, help='Number of trees for the Annoy Index')
+    track2vec_parser.add_argument('--batch_size', type=int, default=100)
     add_paths(track2vec_parser)
 
 
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     elif args.model == 'puresvd':
         puresvd(args)
     elif args.model == 'track2vec':
-
+        track2vec(args)
     elif args.model == 'eval':
         evaluator(args)
 
