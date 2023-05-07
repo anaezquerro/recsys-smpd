@@ -51,6 +51,7 @@ class Track2VecModel:
 
             S = futures.pop(0).result()
             for _ in range(len(futures)):
+                print(S.shape)
                 S = vstack([S, futures.pop(0).result()])
 
         return S
