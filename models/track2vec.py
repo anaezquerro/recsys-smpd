@@ -39,14 +39,16 @@ class Track2VecModel:
         if verbose:
             print('Computing item similarity for all tracks')
 
-        track_norm = np.array([np.sqrt(np.sum(self.model.wv[track]**2)) for track in range(len(self.model.wv))])
+        embeds = np.array([self.model.wv[track] for track in range(len(self.model.wv))])
+        self.model = None
+        track_norm = np.array([np.sqrt(np.sum(embeds[track]**2)) for track in range(embeds.shape[0])])
 
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
 
-            for i in range(0, batch_size*5, batch_size):
+            for i in range(0, embeds.shape[0], batch_size):
                 futures.append(
-                    pool.submit(similarity, list(range(i, i+batch_size)), self.model, self.k, track_norm, granularity, verbose)
+                    pool.submit(similarity, i, batch_size, embeds, self.k, track_norm, verbose)
                 )
 
             S = futures.pop(0).result()
@@ -87,7 +89,7 @@ class Track2VecModel:
                 futures.append(
                     pool.submit(
                         recommend,
-                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, granularity, verbose)
+                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, verbose)
                 )
 
             playlists = futures.pop(0).result()
@@ -107,37 +109,46 @@ class Track2VecModel:
 
 
 
-def similarity(tracks: List[int], model: Word2Vec, k: int, track_norm: np.ndarray, granularity: int, verbose: bool):
+# def similarity(tracks: List[int], model: Word2Vec, k: int, track_norm: np.ndarray, granularity: int, verbose: bool):
+#     if verbose:
+#         print(f'Computing similarity for track {tracks[0]}/{len(model.wv)}')
+#     v = np.array([model.wv[track] for track in tracks])
+#     S = csr_matrix((len(v), len(model.wv)))
+#
+#     min_values = np.repeat(-np.Inf, len(v)).reshape(len(v), 1)
+#     for i in range(0, len(model.wv), granularity):
+#         if verbose:
+#             print(f'Computing similarity between tracks [{min(tracks)}, {max(tracks)}] and tracks [{i}, {i+granularity}]')
+#         start, end = i, min(i+granularity, len(model.wv))
+#         embeds = np.array([model.wv[i] for i in range(start, end)])
+#         sim = (v @ embeds.T)/track_norm[start:end]**2
+#         sim[sim < min_values] = 0
+#         S[:, start:end] = sim
+#         S.eliminate_zeros()
+#
+#         # construct again the sparse matrix
+#         cols, values = csr_argsort(S, k, remov_diag=True)
+#         rows = np.repeat(np.arange(len(v)), k).tolist()
+#         S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(len(v), len(model.wv)))
+#         min_values = S.min(axis=1).toarray()
+#
+#     return S
+
+
+def similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_norm: np.ndarray, verbose: bool):
     if verbose:
-        print(f'Computing similarity for track {tracks[0]}/{len(model.wv)}')
-    v = np.array([model.wv[track] for track in tracks])
-    S = csr_matrix((len(v), len(model.wv)))
-
-    min_values = np.repeat(-np.Inf, len(v)).reshape(len(v), 1)
-    for i in range(0, len(model.wv), granularity):
-        if verbose:
-            print(f'Computing similarity between tracks [{min(tracks)}, {max(tracks)}] and tracks [{i}, {i+granularity}]')
-        start, end = i, min(i+granularity, len(model.wv))
-        embeds = np.array([model.wv[i] for i in range(start, end)])
-        sim = (v @ embeds.T)/track_norm[start:end]**2
-        sim[sim < min_values] = 0
-        S[:, start:end] = sim
-        S.eliminate_zeros()
-
-        # construct again the sparse matrix
-        cols, values = csr_argsort(S, k, remov_diag=True)
-        rows = np.repeat(np.arange(len(v)), k).tolist()
-        S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(len(v), len(model.wv)))
-        min_values = S.min(axis=1).toarray()
-
+        print(f'Computing similarity for track {i}/{embeds.shape[0]}')
+    v = embeds[i:(i+batch_size)]
+    b = len(v)
+    S = (v @ embeds.T)
+    S /= track_norm
+    S /= track_norm[i:(i+b)].reshape(b, 1)
+    S[range(b), range(b)] = 0
+    cols = np.argsort(-S, axis=1)[:, :k]
+    values = S[[[i] for i in range(len(v))], cols.tolist()]
+    rows = np.repeat(np.arange(b), k).flatten().tolist()
+    S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
     return S
-    # for i, track in enumerate(tracks):
-    #     top_k, sim_values = zip(*model.wv.most_similar([model.wv[track]], topn=k))
-    #     rows += [i]*len(sim_values)
-    #     cols += top_k
-    #     data += sim_values
-    # return csr_matrix((data, (rows, cols)), shape=(len(tracks), n_tracks))
-
 
 
 

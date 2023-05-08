@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     # add track2vec arguments
     track2vec_parser = subparsers.add_parser('track2vec', help='Track2Vec model')
-    track2vec_parser.add_argument('--action', choices=['train', 'recommend'], type=str, nargs='*', default=['recommend'])
+    track2vec_parser.add_argument('action', choices=['train', 'recommend'], default='recommend', type=str, nargs='*', help='Action to perform')
     track2vec_parser.add_argument('--embed_dim', type=int, default=50, help='Vector size used in the space model')
     track2vec_parser.add_argument('--context_size', type=int, default=10, help='Context size used for training vector weights')
     track2vec_parser.add_argument('--k', type=int, default=10, help='Neighbourhood size')
