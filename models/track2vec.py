@@ -7,8 +7,7 @@ import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor
 from gensim.similarities.annoy import AnnoyIndexer
-from models.neighbour import recommend
-
+from models.neighbour import recommend, csr_argsort
 class Track2VecModel:
     def __init__(self, embed_dim: int, context_size: int, k: int, model_path: str, train_path: str, test_path: str, trackmap_path: str):
         self.embed_dim = embed_dim
@@ -35,30 +34,30 @@ class Track2VecModel:
         self.model.save(self.model_path)
 
 
-    def item_similarity(self, batch_size: int, num_threads: int, verbose: int) -> csr_matrix:
-        n_tracks = load_npz(self.train_path).shape[1]
+    def item_similarity(self, batch_size: int, num_threads: int, granularity: int, verbose: int) -> csr_matrix:
 
         if verbose:
             print('Computing item similarity for all tracks')
 
+        track_norm = np.array([np.sqrt(np.sum(self.model.wv[track]**2)) for track in range(len(self.model.wv))])
+
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
 
-            for i in range(0, n_tracks, batch_size):
+            for i in range(0, batch_size*5, batch_size):
                 futures.append(
-                    pool.submit(similarity, list(range(i, i+batch_size)), self.model, self.k, n_tracks, verbose)
+                    pool.submit(similarity, list(range(i, i+batch_size)), self.model, self.k, track_norm, granularity, verbose)
                 )
 
             S = futures.pop(0).result()
             for _ in range(len(futures)):
-                print(S.shape)
                 S = vstack([S, futures.pop(0).result()])
 
         return S
 
-    def recommend(self, submit_path: str, num_threads: int, batch_size: int, verbose: bool):
+    def recommend(self, submit_path: str, num_threads: int, batch_size: int, granularity: int, verbose: bool):
         # first we must compute the similarity matrix
-        S = self.item_similarity(batch_size, num_threads, verbose)
+        S = self.item_similarity(batch_size, num_threads, granularity, verbose)
 
         # now obtain the estimated ratings
         Rtest = load_npz(self.test_path)
@@ -76,6 +75,7 @@ class Track2VecModel:
         test = {pid: list(map(trackmap.get, tracks)) for pid, tracks in test.items()}
         test_empty = pop_empty(test)
 
+
         # compute parallel track recommendation
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             pids, tracks = zip(*test.items())
@@ -87,7 +87,7 @@ class Track2VecModel:
                 futures.append(
                     pool.submit(
                         recommend,
-                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, verbose)
+                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, granularity, verbose)
                 )
 
             playlists = futures.pop(0).result()
@@ -107,16 +107,37 @@ class Track2VecModel:
 
 
 
-def similarity(tracks: List[int], model: Word2Vec, k: int, n_tracks: int, verbose: bool):
-    rows, cols, data = list(), list(), list()
+def similarity(tracks: List[int], model: Word2Vec, k: int, track_norm: np.ndarray, granularity: int, verbose: bool):
     if verbose:
-        print(f'Computing similarity for track {tracks[0]}/{n_tracks}')
-    for i, track in enumerate(tracks):
-        top_k, sim_values = zip(*model.wv.most_similar([model.wv[track]], topn=k))
-        rows += [i]*len(sim_values)
-        cols += top_k
-        data += sim_values
-    return csr_matrix((data, (rows, cols)), shape=(len(tracks), n_tracks))
+        print(f'Computing similarity for track {tracks[0]}/{len(model.wv)}')
+    v = np.array([model.wv[track] for track in tracks])
+    S = csr_matrix((len(v), len(model.wv)))
+
+    min_values = np.repeat(-np.Inf, len(v)).reshape(len(v), 1)
+    for i in range(0, len(model.wv), granularity):
+        start, end = i, min(i+granularity, len(model.wv))
+        embeds = np.array([model.wv[i] for i in range(start, end)])
+        sim = (v @ embeds.T)/track_norm[start:end]**2
+        sim[sim < min_values] = 0
+        S[:, start:end] = sim
+        S.eliminate_zeros()
+
+        # construct again the sparse matrix
+        cols, values = csr_argsort(S, k, remov_diag=True)
+        rows = np.repeat(np.arange(len(v)), k).tolist()
+        S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(len(v), len(model.wv)))
+        min_values = S.min(axis=1).toarray()
+
+    return S
+    # for i, track in enumerate(tracks):
+    #     top_k, sim_values = zip(*model.wv.most_similar([model.wv[track]], topn=k))
+    #     rows += [i]*len(sim_values)
+    #     cols += top_k
+    #     data += sim_values
+    # return csr_matrix((data, (rows, cols)), shape=(len(tracks), n_tracks))
+
+
+
 
 
 
@@ -129,4 +150,5 @@ if __name__ == '__main__':
     start = time.time()
     model.recommend('submissions/embed.csv.gz', batch_size=500, num_threads=10, verbose=True)
     end = time.time()
+
 
