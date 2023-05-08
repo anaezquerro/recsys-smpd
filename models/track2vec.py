@@ -46,7 +46,7 @@ class Track2VecModel:
         with ProcessPoolExecutor(max_workers=num_threads) as pool:
             futures = list()
 
-            for i in range(0, embeds.shape[0], batch_size):
+            for i in range(0, batch_size*num_threads, batch_size):
                 futures.append(
                     pool.submit(similarity, i, batch_size, embeds, self.k, track_norm, verbose)
                 )
@@ -107,29 +107,31 @@ class Track2VecModel:
             for pid in test_empty:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
-
-
-# def similarity(tracks: List[int], model: Word2Vec, k: int, track_norm: np.ndarray, granularity: int, verbose: bool):
-#     if verbose:
-#         print(f'Computing similarity for track {tracks[0]}/{len(model.wv)}')
-#     v = np.array([model.wv[track] for track in tracks])
-#     S = csr_matrix((len(v), len(model.wv)))
 #
-#     min_values = np.repeat(-np.Inf, len(v)).reshape(len(v), 1)
-#     for i in range(0, len(model.wv), granularity):
+#
+# def similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_norm: np.ndarray, granularity: int, verbose: bool):
+#     if verbose:
+#         print(f'Computing similarity for track {i}/{embeds.shape[0]}')
+#     v = embeds[i:(i+batch_size)]
+#     b = v.shape[0]
+#     S = csr_matrix((b, embeds.shape[0]))
+#
+#     min_values = np.repeat(-np.Inf, b).reshape(b, 1)
+#     for j in range(0, embeds.shape[0], granularity):
 #         if verbose:
-#             print(f'Computing similarity between tracks [{min(tracks)}, {max(tracks)}] and tracks [{i}, {i+granularity}]')
-#         start, end = i, min(i+granularity, len(model.wv))
-#         embeds = np.array([model.wv[i] for i in range(start, end)])
-#         sim = (v @ embeds.T)/track_norm[start:end]**2
+#             print(f'Computing similarity between tracks [{i}, {i+b}] and tracks [{j}, {j+granularity}]')
+#         start, end = j, min(j+granularity, embeds.shape[0])
+#         sim = v @ embeds[start:end].T
+#         sim /= track_norm[start:end]
+#         sim /= track_norm[i:(i+b)].reshape(b, 1)
 #         sim[sim < min_values] = 0
 #         S[:, start:end] = sim
 #         S.eliminate_zeros()
 #
 #         # construct again the sparse matrix
 #         cols, values = csr_argsort(S, k, remov_diag=True)
-#         rows = np.repeat(np.arange(len(v)), k).tolist()
-#         S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(len(v), len(model.wv)))
+#         rows = np.repeat(np.arange(b), k).tolist()
+#         S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(b, embeds.shape[0]))
 #         min_values = S.min(axis=1).toarray()
 #
 #     return S
