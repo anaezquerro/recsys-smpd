@@ -115,6 +115,8 @@ def similarity(tracks: List[int], model: Word2Vec, k: int, track_norm: np.ndarra
 
     min_values = np.repeat(-np.Inf, len(v)).reshape(len(v), 1)
     for i in range(0, len(model.wv), granularity):
+        if verbose:
+            print(f'Computing similarity between tracks [{min(tracks)}, {max(tracks)}] and tracks [{i}, {i+granularity}]')
         start, end = i, min(i+granularity, len(model.wv))
         embeds = np.array([model.wv[i] for i in range(start, end)])
         sim = (v @ embeds.T)/track_norm[start:end]**2
