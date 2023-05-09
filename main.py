@@ -109,7 +109,7 @@ def track2vec(args):
 
     model = Track2VecModel(embed_dim=args.embed_dim, context_size=args.context_size, k=args.k,
                            model_path=args.model_path, train_path=args.train_path, test_path=args.test_path,
-                           trackmap_path=args.trackmap_path)
+                           trackmap_path=args.trackmap_path, S_path=args.S_path)
 
     i = 0
     if 'train' in args.action:
@@ -189,6 +189,7 @@ if __name__ == '__main__':
     track2vec_parser.add_argument('--context_size', type=int, default=10, help='Context size used for training vector weights')
     track2vec_parser.add_argument('--k', type=int, default=10, help='Neighbourhood size')
     track2vec_parser.add_argument('--model_path', type=str, default='data/track2vec', help='Path to store Gensim model')
+    track2vec_parser.add_argument('--S_path', type=str, default='data/S-track2vec.npz')
     track2vec_parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs in training')
     track2vec_parser.add_argument('--granularity', type=int, default=int(10e3), help='Number of trees for the Annoy Index')
     track2vec_parser.add_argument('--batch_size', type=int, default=100)

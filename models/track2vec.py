@@ -1,5 +1,5 @@
 from gensim.models import Word2Vec
-from scipy.sparse import csr_matrix, load_npz, vstack
+from scipy.sparse import csr_matrix, load_npz, save_npz
 from utils.tools import tolist, load_pickle, read_json, pop_empty, coalesce
 from typing import List, Tuple, Dict
 from utils.constants import TEST_FILE, N_RECS, MAX_THREADS, INFO_ROW
@@ -9,12 +9,13 @@ from concurrent.futures import ProcessPoolExecutor
 from gensim.similarities.annoy import AnnoyIndexer
 from models.neighbour import recommend, csr_argsort
 class Track2VecModel:
-    def __init__(self, embed_dim: int, context_size: int, k: int, model_path: str, train_path: str, test_path: str, trackmap_path: str):
+    def __init__(self, embed_dim: int, context_size: int, k: int, model_path: str, train_path: str, test_path: str, trackmap_path: str, S_path: str):
         self.embed_dim = embed_dim
         self.context_size = context_size
         self.model_path = model_path
         self.train_path = train_path
         self.test_path = test_path
+        self.S_path = S_path
         self.trackmap_path = trackmap_path
         self.k = k
 
@@ -62,7 +63,7 @@ class Track2VecModel:
                 cols, values = map(lambda x: x.flatten().tolist(), (cols, values))
                 rows = np.arange(S_partial.shape[0])
                 S = csr_matrix((values, (rows, cols)), shape=(embeds.shape[0], embeds.shape[0]))
-
+        save_npz(file=self.S_path, matrix=S)
         return S
 
     def recommend(self, submit_path: str, num_threads: int, batch_size: int, verbose: bool):
