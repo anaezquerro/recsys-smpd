@@ -34,7 +34,7 @@ class Track2VecModel:
         self.model.save(self.model_path)
 
 
-    def item_similarity(self, batch_size: int, num_threads: int, granularity: int, verbose: int) -> csr_matrix:
+    def item_similarity(self, batch_size: int, num_threads: int, verbose: int) -> csr_matrix:
 
         if verbose:
             print('Computing item similarity for all tracks')
@@ -43,23 +43,29 @@ class Track2VecModel:
         self.model = None
         track_norm = np.array([np.sqrt(np.sum(embeds[track]**2)) for track in range(embeds.shape[0])])
 
-        with ProcessPoolExecutor(max_workers=num_threads) as pool:
-            futures = list()
+        S = csr_matrix((embeds.shape[0], embeds.shape[0]))
+        for i in range(0, batch_size*num_threads, batch_size):
+            S_partial = similarity(i, batch_size, embeds, self.k, track_norm, verbose)
+            S[i:(i+S_partial.shape[0]), :] = S_partial
+            S[:, i:(i+S_partial.shape[0])] = S_partial.transpose()
 
-            for i in range(0, batch_size*num_threads, batch_size):
-                futures.append(
-                    pool.submit(similarity, i, batch_size, embeds, self.k, track_norm, verbose)
-                )
-
-            S = futures.pop(0).result()
-            for _ in range(len(futures)):
-                S = vstack([S, futures.pop(0).result()])
+        # with ProcessPoolExecutor(max_workers=num_threads) as pool:
+        #     futures = list()
+        #
+        #     for i in range(0, batch_size*num_threads, batch_size):
+        #         futures.append(
+        #             pool.submit(similarity, i, batch_size, embeds, self.k, track_norm, verbose)
+        #         )
+        #
+        #     S = csr_matrix((embeds.shape[0], embeds.shape[0]))
+        #     for _ in range(len(futures)):
+        #         S = vstack([S, futures.pop(0).result()])
 
         return S
 
-    def recommend(self, submit_path: str, num_threads: int, batch_size: int, granularity: int, verbose: bool):
+    def recommend(self, submit_path: str, num_threads: int, batch_size: int, verbose: bool):
         # first we must compute the similarity matrix
-        S = self.item_similarity(batch_size, num_threads, granularity, verbose)
+        S = self.item_similarity(batch_size, num_threads, verbose)
 
         # now obtain the estimated ratings
         Rtest = load_npz(self.test_path)
@@ -142,14 +148,15 @@ def similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_norm: 
         print(f'Computing similarity for track {i}/{embeds.shape[0]}')
     v = embeds[i:(i+batch_size)]
     b = len(v)
-    S = (v @ embeds.T)
-    S /= track_norm
+    S = (v @ embeds[i:].T)
+    S /= track_norm[i:]
     S /= track_norm[i:(i+b)].reshape(b, 1)
     S[range(b), range(b)] = 0
     cols = np.argsort(-S, axis=1)[:, :k]
     values = S[[[i] for i in range(len(v))], cols.tolist()]
     rows = np.repeat(np.arange(b), k).flatten().tolist()
-    S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
+    S = csr_matrix((values.flatten().tolist(), (rows, (cols.flatten() + i).tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
+    print(S.shape)
     return S
 
 

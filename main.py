@@ -126,7 +126,7 @@ def track2vec(args):
     if 'recommend' in args.action:
         start = time.time()
         model.recommend(submit_path=args.submit_path, num_threads=args.num_threads[i],
-                        batch_size=args.batch_size, granularity=args.granularity, verbose=args.verbose)
+                        batch_size=args.batch_size, verbose=args.verbose)
         end = time.time()
         if args.time:
             print('Recommending time:', end-start)
