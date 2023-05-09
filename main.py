@@ -126,7 +126,7 @@ def track2vec(args):
     if 'recommend' in args.action:
         start = time.time()
         model.recommend(submit_path=args.submit_path, num_threads=args.num_threads[i],
-                        batch_size=args.batch_size, verbose=args.verbose)
+                        batch_size=args.batch_size, num_trees=args.num_trees, annoy=args.annoy, verbose=args.verbose)
         end = time.time()
         if args.time:
             print('Recommending time:', end-start)
@@ -191,7 +191,8 @@ if __name__ == '__main__':
     track2vec_parser.add_argument('--model_path', type=str, default='data/track2vec', help='Path to store Gensim model')
     track2vec_parser.add_argument('--S_path', type=str, default='data/S-track2vec.npz')
     track2vec_parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs in training')
-    track2vec_parser.add_argument('--granularity', type=int, default=int(10e3), help='Number of trees for the Annoy Index')
+    track2vec_parser.add_argument('--num_trees', type=int, default=10, help='Number of trees for the Annoy Index')
+    track2vec_parser.add_argument('--annoy', action='store_true', help='Approximate nearest neighbours by cosine similarity')
     track2vec_parser.add_argument('--batch_size', type=int, default=100)
     add_paths(track2vec_parser)
 
