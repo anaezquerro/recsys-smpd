@@ -95,17 +95,9 @@ class Track2VecModel:
             for i in range(0, embeds.shape[0], batch_size):
                 futures.append(pool.submit(pure_similarity, i, batch_size, embeds, self.k, track_norm, verbose))
 
-            S = csr_matrix((embeds.shape[0], embeds.shape[0]))
+            S = futures.pop(0).result()
             for _ in range(len(futures)):
-                S_partial = futures.pop(0).result()
-                S[i:(i + S_partial.shape[0]), :] = S_partial
-                S[:, i:(i + S_partial.shape[0])] = S_partial.transpose()
-
-                # now get the top K similarities
-                cols, values = csr_argsort(S, topK=self.k)
-                cols, values = map(lambda x: x.flatten().tolist(), (cols, values))
-                rows = np.arange(S_partial.shape[0])
-                S = csr_matrix((values, (rows, cols)), shape=(embeds.shape[0], embeds.shape[0]))
+                S = vstack([S, futures.pop(0).result()])
 
         # S ~ [n_tracks, n_tracks]
         save_npz(file=self.S_path, matrix=S)
@@ -219,8 +211,8 @@ def pure_similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_n
         print(f'Computing similarity for track {i}/{embeds.shape[0]}')
     v = embeds[i:(i+batch_size)]
     b = len(v)
-    S = (v @ embeds[i:].T)
-    S /= track_norm[i:]
+    S = (v @ embeds.T)
+    S /= track_norm
     S /= track_norm[i:(i+b)].reshape(b, 1)
     S[range(b), range(b)] = 0
     cols = np.argsort(-S, axis=1)[:, :k]
