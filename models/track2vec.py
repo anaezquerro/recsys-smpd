@@ -201,7 +201,7 @@ class Track2VecModel:
         with open(submit_path, 'w', encoding='utf8') as file:
             file.write(INFO_ROW + '\n')
             for pid, tracks in playlists.items():
-                file.write(f'{pid},' + ','.join(list(map(trackmap.get, tracks))) + '\n')
+                file.write(f'{pid},' + ','.join(trackmap[track] for track in tracks) + '\n')
             for pid in test_empty:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 

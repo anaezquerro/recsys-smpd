@@ -131,7 +131,7 @@ python3 main.py track2vec recommend -eval -v -t --num_threads 1 10 --k=20 --anno
 Para realizar recomendaciones computando la matriz de similitudes (muy costoso):
 
 ```shell
-python3 main.py track2vec recommend -eval -v -t --num_threads 10 10 --k=20
+python3 main.py track2vec recommend -eval -v -t --num_threads 5 10 --k=20
 ```
 
 
