@@ -1,4 +1,4 @@
-# Explicación de los modelos implementados
+# Further explanation of implemented models
 
 En este documento se explican brevemente los modelos implementados para la práctica 
 y el preporcesamiento necesario para ejecutar cada uno de ellos sobre el 

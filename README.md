@@ -8,63 +8,55 @@ Our approaches are highly updated from the state-of-the-art in Recommender Syste
 
 ## Implemented models
 
-Following the [submission format](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#submission-format) of the challenge, we have to recommend 500 tracks with a given limitation: it is not permitted to suggest some track that it is *already included* in a test playlist.
+Following the [submission format](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#submission-format) of the challenge, we recommend 500 tracks based on a model with a given limitation: it is not permitted to suggest some track that it is *already included* in a test playlist.
 
-The developed models are the following:
+### Popularity baseline
 
-- Baseline model based on popularity ([models/baseline.py](models/baseline.py)):
+We compute the most popular tracks counting the number of times a track is included in some playlist. We do not take into account those tracks that are included more than once in each playlist.
 
-Firstly, we were asked to compute a *baseline* model based on popularity. We copmute the most popular tracks counting the number of times a track is included in some playlist.
+### Neighborhood-based model 
 
+We implemented two variants of the neighborhood model: one where elements are playlists (user-based version) and other where elements are tracks (item-based version). In each version, we compute the cosine similarity between elements (either tracks/items or playlists/users) and estimate the ratings of each test playlist given the following formula:
 
+$$\begin{array}{rcll}
+    \hat{r}_{u,i} &=&\ \displaystyle\sum_{v\in V_u} s_{u,v}\cdot r_{v,i} \qquad & \text{(user-based)}\\[1.5em]
+    \hat{r}_{u,i} &=& \displaystyle \sum_{j\in\mathcal{J}_i} s_{i,j} r_{u,j} & \text{(item-based)}
+\end{array}
+$$
 
+where $V_u$ and $\mathcal{J}_i$ represent the neighborhood of user $u$ and item $i$ of size $k$, respectively and $s$ is the cosine similarity. The size $k$ is given as an hyper-parameter in the implementation. Then, the top 500 tracks not rated with highest score are recommended to each test playlist.
 
+### Pure Singular Value Decomposition
 
+We compute the binary sparse matrix of train test playlists wrt. to all tracks and use SVD to project each playlist into a lower dimension:
+$$R=U\times \Sigma \times V^t \approx \tilde{U} \times \tilde{\Sigma} \times \tilde{V}^t$$
+In the first variation we use both the train and test sparse matrices to compute factorization ($R=R_\text{train}|R_\text{test}$). In the second variation we calculate the factorization using only training data ($R=R_\text{train}$) and then project each test playlist vector ($\vec{r}_{m+1}$) to the latent space with:
+$$\vec{u}_{m+1} = \vec{r}_{m+1} \cdot \tilde{V}$$
+Scores for each pair (playlist, track) is computed by the dot product of their corresponding latent vectors:
+$$ \hat{r}_{u,i} = \vec{u}_u \times \tilde{\Sigma} \times \vec{v}_i^t $$
 
+### CBOW model: track2vec
 
-
-## Team builders :construction_worker:
-
-- Ana Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es), [GitHub](https://github.com/anaezquerro)).
-- Pedro Souza ([pedro.souza@udc.es](mailto:pedro.souza@udc.es), [GitHub](https://github.com/pedrosouzaa1)).
-
-## Models
-
-- *Baseline*: Popularity.
-- Neighbor-based Model with two variants: user-based and item-based.
-- 
-- Modelo basado en popularidad ([baseline.py](models/baseline.py)). 
-- Modelo basado en vecindarios ([neighbour.py](models/neighbour.py)) de playlists (_user-based_) o de tracks (_item-based_).
-- Modelo basado en SVD puro ([puresvd.py](models/puresvd.py)).
-- Modelo basado en vecindarios de tracks utilizando embeddings ([track2vec.py](models/track2vec.py)).
-
-Para mayor información acerca de la implementación de los modelos se recomienda leer [models/README.md](models/README.md).
-
-## Manual de uso
-
-Para realizar las recomendaciones y evaluar los modelos se puede ejecutar directamente el archivo 
-[main.py](main.py) por línea de comandos, seguido de los siguientes argumentos:
-
-- `model`: Nombre del modelo que se quiere ejecutar. Las opciones son `base`, `neighbour`, `puresvd`, `track2vec` y `eval`. En caso 
-de escoger `eval` se lanza el [Evaluator](utils/evaluation.py) y se debe especificar obligatoriamente el `submit_path`.
-- `-eval`: Sólo funcional cuando se especifica un modelo de recomendación. Al añadir el _flag_ se realiza la evaluación de la _submission_ generada (especificada en el argument
-`submit_path`).
-
-A mayores se pueden añadir forma opcional los siguientes parámetros a los modelos:
+In the last iteration, we trained [word2vec model](https://arxiv.org/abs/1301.3781) to contextualize tracks in different playlists as they were words in sentences. The result is a contextualized embedding per track with a lower dimension. Then, we use the item-based rating estimation of the Neighborhood-based model to compute the rating using cosine similarity.
 
 
-- `submit_path`: Ruta en la que se exportará la recomendación en el 
-[formato del challenge](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/). 
-- `num_threads`: Número de hilos que se utilizarán para paralelizar en todas las fases 
-predicción y recomendación.
-- `time`: *Flag* que indica si see quiere imprimir por pantalla o no los tiempos de ejecución. 
-- `verbose`: *Flag* que indica si se quiere imprimir por pantalla un _trace_ de la ejecución. 
 
-En la siguiente tabla podemos ver el recopilatorio de los parámetros que se utilizan y sus valores por defecto dependiendo 
-del modelo. Nótese que:
+## User manual
 
-- Los *flags* van precedidos por un guión (-).
-- Las celdas en blanco indican que el parámetro no se usa para ese modelo en concreto.
+In order to make recommendations and evaluate each model, you can directly run the `main.py` script in terminal with the following arguments:
+
+- `model`: Name of the model to run. Choices are `base`, `neighbour`, `puresvd`, `track2vec` y `eval`. In case of `eval`, the [Evaluator](utils/evaluation.py) class will be called and it is mandatory to specify a `submit_path` to compute evaluation metrics.
+- `-eval`: Will only have effect if a model is specified with `model`. When this flag is added, the submission generated by the called model will be evaluated. 
+
+Optionally, these parameters can be added to all models:
+
+- `submit_path`: Path where recommendations will be saved in the 
+[challenge submission format](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge/). 
+- `num_threads`: Number of processes used to parallelize all running phases (prediction and recommendation). 
+- `time`: *Flag* to indicate if execution time is traced in terminal. 
+- `verbose`: *Flag* to indicated if execution process is _traced_ in terminal.
+
+In the following table we provide a summary of the parameters used and default values per model. Note that flags are preceded by a hyphen (-) and a blank cell means that parameter is not used by the model.
 
 | Parámetro       | `base`                    | `neighbour`                 | `puresvd`                               | `track2vec`                    |
 |-----------------|---------------------------|-----------------------------|-----------------------------------------|--------------------------------|
@@ -90,28 +82,30 @@ del modelo. Nótese que:
 | `granularity`   |                           |                             |                                         | `10e3`                         |
 
 ---
-## Ejemplos de ejecuciones
 
-Para probar los dos modelos implementados se sugiere no alterar los parámetros que vienen por defecto (a excepción del 
-número de hilos y _batch_size_). A continuación se propone un ejemplo de ejecución por línea de comandos para probar 
-los dos modelos desde cero.
+**Note**: It is important to have in the root folder (`recsys-smpd/`) the JSON files of the SMP dataset.
+
+## Execution examples
+
+In order to test all implemented models, we suggest to not change default parameters (except number of processes and batch size). Here we provide execution examples in terminal to test models:
 
 
-### [`BaselineModel`](models/baseline.py)
+
+[`BaselineModel`](models/baseline.py):
 
 
 ```shell
 python3 main.py base -t -v && python3 main.py eval -t -v --submit_path=submissions/base.csv.gz
 ```
-### [`NeighbourModel`](models/neighbour.py)
+[`NeighbourModel`](models/neighbour.py):
 
-Primero generar las matrices _sparse_:
+1. Generate sparse matrices:
 
 ```shell
 python3 main.py neighbour user --action sparsify -t -v
 ```
 
-Y después se pueden probar los modelos _user_ e _item_ _based_:
+2. Test user-based and item-based variantes:
 
 ```shell
 python3 main.py neighbour user -eval --action recommend -t -v --k=100
@@ -121,53 +115,45 @@ python3 main.py neighbour user -eval --action recommend -t -v --k=100
 python3 main.py neighbour item -eval --action recommend -t -v --k=20 --batch_size=15000
 ```
 
-Para el `NeighbourModel` se comprobó la configuración de _batch_size_ y _num_threads_ en una máquina de 32GB de RAM y 20 hilos. 
-Se recomienda realizar previamente una estimación de la configuración a utilizar dependiendo de las capacidades de la máquina.
 
-### [`PureSVDModel`](models/puresvd.py)
+[`PureSVDModel`](models/puresvd.py):
 
-Sin utilizar la matriz de test para factorizar con 10 factores latentes:
+1. Using only the train matrix to factorize with 10 latent factors:
+
 ```shell
 python3 main.py puresvd -eval --action recommend -t -v --h=10 --batch_size=50 --num_threads=10
 ```
 
-Utilizando la matriz de test para factorizar con 10 factores latentes:
+2. Using the train and test matrix to factorize with 10 latent factors:
 
 ```shell
 python3 main.py puresvd -ftest -eval --action recommend -t -v --h=10 --batch_size=100 --num_threads=10
 ```
 
 
-### [`Track2Vec`](models/track2vec.py)
+[`Track2Vec`](models/track2vec.py):
 
-Para entrenar el modelo [gensim.Word2Vec](https://radimrehurek.com/gensim/models/word2vec.html) con un tamaño de 
-*embedding* `embed_dim=100` y 100 *epochs*:
+1. First we need to train [word2vec](https://arxiv.org/abs/1301.3781) model with [gensim library](https://radimrehurek.com/gensim/models/word2vec.htm) with an embedding dimension of $d=100$ during 100 epochs:
 
 ```shell
 python3 main.py track2vec train -v -t --embed_dim=100 --num_epochs=100
 ```
-
-Para realizar recomendaciones aproximando el algoritmo kNN con [gensim.AnnoyIndexer](https://radimrehurek.com/gensim/auto_examples/tutorials/run_annoy.html) 
-con `k=20`:
+2. To make recommendations using the kNN approximation of the [gensim.AnnoyIndexer](https://radimrehurek.com/gensim/auto_examples/tutorials/run_annoy.html) with $k=20$:
 
 ```shell
 python3 main.py track2vec recommend -eval -v -t --num_threads 1 10 --k=20 --annoy --num_trees=100
 ```
 
-Para realizar recomendaciones computando la matriz de similitudes (muy costoso):
+3. To make recommendations using exact cosine similarity (this is computationally expensive):
 
 ```shell
 python3 main.py track2vec recommend -eval -v -t --num_threads 5 10 --k=20
 ```
 
 
-## Resultados 
+## Results
 
-En el siguiente [enlace](https://udcgal-my.sharepoint.com/:f:/g/personal/ana_ezquerro_udc_es/EuDyme7p-uFPpVomMjwWkmgBhpUUz3clxkTMELy2J0BZjA?e=FOFokB) 
-se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
-
-
-| Modelo                  | R-Precision | nDCG | clicks |
+| Model                  | R-Precision | nDCG | clicks |
 |-------------------------|-------------|------|--------|
 | popularity              | 0.02        | 0.09 | 17.33  |
 | user (k=100)            | 0.16        | 0.32 | 4.74   |
@@ -178,4 +164,11 @@ se puede acceder a los archivos `csv.gz` de las _submissions_ de cada modelo.
 | puresvd' (h=50)         | 0.12        | 0.27 | 6.55   |
 | track2vec (d=100, k=20) | 0.02        | 0.07 | 14.36  |
 
-**Nota**: En el modelo `puresvd` el apóstrofe indica que se utilizó la matriz de test para factorizar.
+**Nota**: In `puresvd` the ' means that test matrix was used to factorize.
+
+
+## Team builders :construction_worker:
+
+- Ana Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es), [GitHub](https://github.com/anaezquerro)).
+- Pedro Souza ([pedro.souza@udc.es](mailto:pedro.souza@udc.es), [GitHub](https://github.com/pedrosouzaa1)).
+
