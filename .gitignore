@@ -130,7 +130,7 @@ dmypy.json
 
 *.npz
 *.csv.gz
-spotify*
+spotify*playlists*
 data/*
 .idea/*
 submissions/*
