@@ -75,7 +75,7 @@ class NeighbourModel:
                 futures.append(
                     pool.submit(
                         recommend,
-                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, verbose)
+                        Rest, dict(zip(pids[start:end], tracks[start:end])), pidmap, popular, verbose)
                 )
 
             playlists = futures.pop(0).result()
@@ -183,11 +183,13 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     b = v.shape[0]
 
     # compute v * t(Rtrain) ~ [batch_size, m_train]
-    sim = v.dot(Rtrain.transpose())
+    sim = v.dot(Rtrain.T.tocsr())
 
     # normalize with the norm2
-    sim = sim.multiply(1 / Ntrain)
+    # sim = sim.multiply(1 / Ntrain)
+    sim = sim.multiply(1/Ntrain)
     sim = sim.multiply(1 / Ntest[i:(i + batch_size)].reshape(b, 1))
+
 
     # store indices of the K similarities
     top_k, data = csr_argsort(csr_matrix(sim), k)
@@ -195,14 +197,14 @@ def user_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Rtest: csr_matr
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
     data = data.flatten().tolist()
-    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]))
+    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[0]), dtype=np.float32)
 
 def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.ndarray, k: int, verbose: bool):
     if verbose:
         print(f'Item similarity of item {i}/{Rtrain.shape[1]}')
 
     # v ~ [batch_size, n_tracks]
-    v = Rtrain.transpose()[i:(i + batch_size), :]
+    v = Rtrain.T.tocsr()[i:(i + batch_size), :]
     b = v.shape[0]
 
     # compute v * Rtrain ~ [batch_size, n_tracks]
@@ -213,29 +215,32 @@ def item_similarity(i: int, batch_size: int, Rtrain: csr_matrix, Ntracks: np.nda
     sim = sim.multiply(1 / Ntracks[i:(i + batch_size)].reshape(b, 1))
 
     # store indices of the K similarities
-    sim = csr_matrix(sim)
+    sim = csr_matrix(sim, dtype=np.float32)
     top_k, data = csr_argsort(sim, k, remov_diag=i)
 
     rows = np.repeat(np.arange(b), k).tolist()
     cols = top_k.flatten().tolist()
     data = data.flatten().tolist()
-    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]))
+    return csr_matrix((data, (rows, cols)), shape=(b, Rtrain.shape[1]), dtype=np.float32)
 
-def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], verbose: bool) -> Dict[int, List[int]]:
+def recommend(Rest: csr_matrix, test: Dict[int, List[int]], pidmap: Dict[int, int], popular: np.array, verbose=True) -> Dict[int, List[int]]:
     playlists = dict()
-    info = lambda i: print(f'Computing recommendation for playlist {i}/{len(playlists)}') if (i%100==0) and verbose else None
+    info = lambda i: print(f'Computing recommendation for playlist {i}/{len(test)}') if (i%100==0) and verbose else None
     for i, pid in enumerate(test.keys()):
         info(i)
         ratings = Rest.getrow(pidmap[pid])
         ratings[:, test[pid]] = 0
         ratings.eliminate_zeros()
         ratings, cols = ratings.data, ratings.indices
-        playlists[pid] = cols[(-ratings).argsort().tolist()[:N_RECS]]
+        playlists[pid] = cols[(-ratings).argsort().tolist()[:N_RECS]].tolist()
+        if len(playlists[pid]) < N_RECS:
+            news = np.setdiff1d(popular, np.array(playlists[pid] + test[pid]))[:(N_RECS-len(playlists[pid]))]
+            playlists[pid] += news.tolist()
     return playlists
 
 
 if __name__ == '__main__':
-    train_path, test_path, trackmap_path = 'data/Rtrain.npz', 'data/Rtest.npz', 'trackmap.pickle'
+    train_path, test_path, trackmap_path = 'data/Rtrain.npz', 'data/Rtest.npz', 'data/trackmap.pickle'
 
     if sys.argv[1] == 'user':
         model = NeighbourModel('user', 100, train_path, test_path, trackmap_path)
@@ -249,6 +254,6 @@ if __name__ == '__main__':
 
     start = time.time()
     model.recommend(f'submissions/{sys.argv[1]}-based.csv.gz', batch_size=batch_size, num_threads=(8, 12),
-                    matrix_path=f'Rest-{sys.argv[1]}.npz', load=True, verbose=True)
+                    matrix_path=f'data/Rest.npz', load=True, verbose=True)
     end = time.time()
     print(f'Recommendation time: {end-start}')

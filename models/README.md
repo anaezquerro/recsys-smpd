@@ -4,7 +4,7 @@ En este documento se explican brevemente los modelos implementados para la prác
 y el preporcesamiento necesario para ejecutar cada uno de ellos sobre el 
 [SPMD](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge).
 
-## Modelo basado en popularidad (`baseline.py`)
+## Modelo basado en popularidad ([baseline.py](baseline.py))
 
 Para el modelo basado en popularidad el único preprocesamiento necesario para 
 generar una _submission_ de recomendación es contar la ocurrencia de los _tracks_ sobre 
@@ -22,12 +22,12 @@ Fases de la ejecución del modelo:
 1. `preprocess`: _Parsing_ del conjunto de entrenamiento para realizar el conteo de los _tracks_.
 2. `recommend`: Generación de la recomendación.
 
-## Modelo basado en vecindarios (`neighbour.py`)
+## Modelo basado en vecindarios ([neighbour.py](neighbour.py))
 
 En el modelo basado en vecindarios, para calcular las similaridades entre _playlists_ 
 y _tracks_ fue necesario crear una matriz _sparse_ del conjunto de entrenamiento y otra 
 del conjunto de test. 
-La clase `Sparse` (`sparse.py`) realiza este proceso en paralelo: primero recoge todas 
+La clase `Sparse` ([sparse.py](../utils/sparse.py)) realiza este proceso en paralelo: primero recoge todas 
 las _playlists_ y todos los _tracks_ del dataset y crea las matrices _sparse_ y las 
 almacena.
 
@@ -75,6 +75,32 @@ Fases de la ejecución del modelo:
 2. `recommend`: Generación de la recomendación _user_ o _item_ _based_.
 
 
+## Modelo basado en SVD puro ([puresvd.py](puresvd.py))
 
 
+En el modelo basado en SVD puro es necesario también crear una matriz _sparse_ del conjunto de entrenamient y test. 
+Una vez con las matrices almacenadas, se puede obtener la matriz de _ratings_ estimada mediante dos métodos:
 
+1. Factorizando la matriz de entrenamiento (obteniendo así las matrices de proyección para proyectar la matriz de test).
+2. Factorizando ambas matrices (y la matriz proyectada de test se obtiene directamente).
+
+Notación del código:
+
+| Variable | Significado                                | Dimensiones      |
+|----------|--------------------------------------------|------------------|
+| `R`      | Matriz *sparse*                            | [`m`, `n`]       |
+| `U`      | Matriz proyectada a dimensión `h`          | [`m`, `h`]       |
+| `S`      | Matriz diagonal                            | [`h`, `h`]       |
+| `V`      | Matriz de proyección                       | [`n`, `h`]       |
+| `Utest`  | Matriz de test proyectada a dimensión `h`  | [`m_test`, `h`]  | 
+
+
+Consideraciones de la implementación:
+
+- Para implementar la factorización se utilizó la librería [sparsesvd](https://pypi.org/project/sparsesvd/).
+- Para computar los _ratings_ estimados a partir de la matriz `Utest`, se paralelizó la multiplicación con `S` y `V`.
+
+Fases de la ejecución del modelo:
+
+- `sparsify`: Generación de las matrices _sparse_.
+- `recommend`: Generación de las recomendaciones.

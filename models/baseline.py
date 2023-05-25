@@ -1,7 +1,6 @@
 import os, time, json
 from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, List, Callable
-from tqdm import tqdm
 from utils.tools import submit, coalesce, read_json
 from utils.constants import MAX_THREADS, TRAIN_FOLDER, N_RECS, TEST_FILE
 
