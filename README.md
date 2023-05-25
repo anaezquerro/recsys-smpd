@@ -19,6 +19,7 @@ We compute the most popular tracks counting the number of times a track is inclu
 We implemented two variants of the neighborhood model: one where elements are playlists (user-based version) and other where elements are tracks (item-based version). In each version, we compute the cosine similarity between elements (either tracks/items or playlists/users) and estimate the ratings of each test playlist given the following formula:
 
 $$ \hat{r}_{u,i} = \sum_{v\in V_u} s_{u,v} r_{v,i} \quad  \text{(user-based)} $$
+
 $$ \hat{r}_{u,i} = \sum_{j\in\mathcal{J}_i} s_{i,j} r_{u,j} \quad \text{(item-based)} $$
 
 where $V_u$ and $\mathcal{J}_i$ represent the neighborhood of user $u$ and item $i$ of size $k$, respectively and $s$ is the cosine similarity. The size $k$ is given as an hyper-parameter in the implementation. Then, the top 500 tracks not rated with highest score are recommended to each test playlist.
@@ -26,7 +27,9 @@ where $V_u$ and $\mathcal{J}_i$ represent the neighborhood of user $u$ and item 
 ### Pure Singular Value Decomposition
 
 We compute the binary sparse matrix of train test playlists wrt. to all tracks and use SVD to project each playlist into a lower dimension:
+
 $$R=U\times \Sigma \times V^t \approx \tilde{U} \times \tilde{\Sigma} \times \tilde{V}^t$$
+
 In the first variation we use both the train and test sparse matrices to compute factorization ($R=R_\text{train}|R_\text{test}$). In the second variation we calculate the factorization using only training data ($R=R_\text{train}$) and then project each test playlist vector ($\vec{r}_{m+1}$) to the latent space with:
 
 $$ \vec{u}_{m+1} = \vec{r}_{m+1} \tilde{V} $$
