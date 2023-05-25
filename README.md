@@ -1,12 +1,17 @@
-# Modelos de Recomendación para el Spotify Million Playlist Dataset Challenge
+# Recommender Systems for the [Spotify Million Playlist Dataset Challenge ](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge) <img  class="lazyloaded" src="spotify.svg" height="30px">
+
+Welcome :wave:!
 
 
-Equipo:
-- Ana Xiangning Pereira Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es)).
-- Pedro Souza López ([pedro.souza@udc.es](mailto:pedro.souza@udc.es)).
+Team:
+- Ana Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es), [GitHub](https://github.com/anaezquerro)).
+- Pedro Souza ([pedro.souza@udc.es](mailto:pedro.souza@udc.es), [GitHub](https://github.com/pedrosouzaa1)).
 
-## Modelos implementados
+## Models
 
+- *Baseline*: Popularity.
+- Neighbor-based Model with two variants: user-based and item-based.
+- 
 - Modelo basado en popularidad ([baseline.py](models/baseline.py)). 
 - Modelo basado en vecindarios ([neighbour.py](models/neighbour.py)) de playlists (_user-based_) o de tracks (_item-based_).
 - Modelo basado en SVD puro ([puresvd.py](models/puresvd.py)).
