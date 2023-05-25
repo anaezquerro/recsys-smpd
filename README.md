@@ -32,7 +32,9 @@ $$R=U\times \Sigma \times V^t \approx \tilde{U} \times \tilde{\Sigma} \times \ti
 
 In the first variation we use both the train and test sparse matrices to compute factorization ($R=R_\text{train}|R_\text{test}$). In the second variation we calculate the factorization using only training data ($R=R_\text{train}$) and then project each test playlist vector ($\vec{r}_{m+1}$) to the latent space with:
 
-$$ \vec{u}_{m+1} = \vec{r}_{m+1} \tilde{V} $$
+```math
+\vec{u}_{m+1} = \vec{r}_{m+1} \tilde{V}
+```
 
 Scores for each pair (playlist, track) is computed by the dot product of their corresponding latent vectors:
 
