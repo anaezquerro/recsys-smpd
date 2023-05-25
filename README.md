@@ -18,11 +18,8 @@ We compute the most popular tracks counting the number of times a track is inclu
 
 We implemented two variants of the neighborhood model: one where elements are playlists (user-based version) and other where elements are tracks (item-based version). In each version, we compute the cosine similarity between elements (either tracks/items or playlists/users) and estimate the ratings of each test playlist given the following formula:
 
-$$\begin{array}{rcll}
-    \hat{r}_{u,i} &=&\ \displaystyle\sum_{v\in V_u} s_{u,v}\cdot r_{v,i} \qquad & \text{(user-based)}\\[1.5em]
-    \hat{r}_{u,i} &=& \displaystyle \sum_{j\in\mathcal{J}_i} s_{i,j} r_{u,j} & \text{(item-based)}
-\end{array}
-$$
+$$\hat{r}_{u,i} = \displaystyle\sum_{v\in V_u} s_{u,v}\cdot r_{v,i} \qquad  \text{(user-based)} $$
+$$\hat{r}_{u,i} = \displaystyle \sum_{j\in\mathcal{J}_i} s_{i,j} r_{u,j} \qquad \text{(item-based)} $$
 
 where $V_u$ and $\mathcal{J}_i$ represent the neighborhood of user $u$ and item $i$ of size $k$, respectively and $s$ is the cosine similarity. The size $k$ is given as an hyper-parameter in the implementation. Then, the top 500 tracks not rated with highest score are recommended to each test playlist.
 
