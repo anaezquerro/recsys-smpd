@@ -1,9 +1,30 @@
 # Recommender Systems for the [Spotify Million Playlist Dataset Challenge ](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge) <img  class="lazyloaded" src="spotify.svg" height="30px">
 
-Welcome :wave:!
+Welcome to our first Recommender Systems repo! :wave: This work was developed as a college assignment in our last college year. We were encouraged to implement classical approaches in Recommender Systems to tackle the popular [Spotify Million Playlist Dataset Challenge <img  class="lazyloaded" src="spotify.svg" height="15px"> (SMPD)](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge). This challenge was released in the [ACM RecSys Conference 2018](https://www.recsyschallenge.com/2018/) and all data is available in [Spotify website](https://research.atspotify.com/datasets/). Researches were intended to make accurate recommendations for a huge dataset of 1M playlists with 2M unique tracks of 300k different artists. 
+
+Our approaches are highly updated from the state-of-the-art in Recommender Systems since they were developed for academic purposes. However, it might be interesting to take them into account as baselines of new proposals, so we decided to release all our code in order to help the research community. In our college assignment we were expected to implement in local machines (with limited resources) efficient parsers for the dataset to compute naive recommendations with classical techniques. In our lecture sessions we followed [Ricci's Handbook](https://link.springer.com/book/10.1007/978-0-387-85820-3) to learn some basis, so if you are interested in check the theoretical aspect of our implemented models we suggest you to consult this fantastic manuscript :v:.
 
 
-Team:
+
+## Implemented models
+
+Following the [submission format](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#submission-format) of the challenge, we have to recommend 500 tracks with a given limitation: it is not permitted to suggest some track that it is *already included* in a test playlist.
+
+The developed models are the following:
+
+- Baseline model based on popularity ([models/baseline.py](models/baseline.py)):
+
+Firstly, we were asked to compute a *baseline* model based on popularity. We copmute the most popular tracks counting the number of times a track is included in some playlist.
+
+
+
+
+
+
+
+
+## Team builders :construction_worker:
+
 - Ana Ezquerro ([ana.ezquerro@udc.es](mailto:ana.ezquerro@udc.es), [GitHub](https://github.com/anaezquerro)).
 - Pedro Souza ([pedro.souza@udc.es](mailto:pedro.souza@udc.es), [GitHub](https://github.com/pedrosouzaa1)).
 
