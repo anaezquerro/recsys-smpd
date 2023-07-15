@@ -2,7 +2,7 @@ from gensim.models import Word2Vec
 from scipy.sparse import csr_matrix, load_npz, save_npz, vstack
 from utils.tools import tolist, load_pickle, read_json, pop_empty, coalesce
 from typing import List, Tuple, Dict
-from utils.constants import TEST_FILE, N_RECS, MAX_THREADS, INFO_ROW
+from utils.constants import INPUT_FILE, N_RECS, MAX_THREADS, INFO_ROW
 import numpy as np
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -170,7 +170,7 @@ class Track2VecModel:
         del Rtest, S, Rtrain
 
         # load additional maps
-        test = read_json(TEST_FILE)
+        test = read_json(INPUT_FILE)
         trackmap = load_pickle(self.trackmap_path)
         pidmap = load_pickle(self.test_path.replace('.npz', '.pickle'))
         test = {pid: list(map(trackmap.get, tracks)) for pid, tracks in test.items()}

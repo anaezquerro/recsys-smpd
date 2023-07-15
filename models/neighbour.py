@@ -5,7 +5,7 @@ import sys, time
 from utils.tools import coalesce, read_json, load_pickle
 from scipy.sparse import load_npz, save_npz, csr_matrix, vstack
 from scipy.sparse.linalg import norm
-from utils.constants import N_RECS, TEST_FILE, INFO_ROW
+from utils.constants import N_RECS, INFO_ROW, INPUT_FILE
 
 class NeighbourModel:
 
@@ -51,7 +51,7 @@ class NeighbourModel:
         del self.Rtrain, self.Rtest
 
         # read test file, trackmap (track_uri -> col) and pidmap (pid -> row)
-        test = read_json(TEST_FILE)
+        test = read_json(INPUT_FILE)
         trackmap = load_pickle(self.trackmap_path)
         pidmap = load_pickle(self.test_path.replace('.npz', '.pickle'))
 

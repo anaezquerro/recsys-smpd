@@ -2,7 +2,7 @@ import os, time, json
 from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, List, Callable
 from utils.tools import submit, coalesce, read_json
-from utils.constants import MAX_THREADS, TRAIN_FOLDER, N_RECS, TEST_FILE
+from utils.constants import MAX_THREADS, TRAIN_FOLDER, N_RECS, INPUT_FILE
 
 class BaselineModel:
 
@@ -48,7 +48,7 @@ class BaselineModel:
 
     def recommend(self, submit_path: str, num_threads: int, verbose: bool) -> Dict[int, List[str]]:
         # extract playlists for evaluation
-        pids, tracks = zip(*read_json(TEST_FILE).items())
+        pids, tracks = zip(*read_json(INPUT_FILE).items())
 
         # parallelize prediction
         if verbose:

@@ -1,7 +1,7 @@
 import time, os, pickle
 from typing import Dict, List, Tuple
 from utils.tools import coalesce, read_json, flatten, save_pickle
-from utils.constants import TEST_FILE, TRAIN_FOLDER
+from utils.constants import INPUT_FILE, TRAIN_FOLDER
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
@@ -35,7 +35,7 @@ class Sparse:
         self.test_path = test_path
         self.trackmap_path = trackmap_path
 
-        self.test_pids = read_json(TEST_FILE).keys()
+        self.test_pids = read_json(INPUT_FILE).keys()
 
     def preprocess(self, num_threads: int, verbose: bool):
         """
@@ -49,7 +49,7 @@ class Sparse:
         self.verbose = verbose
         train_paths = list(map(lambda x: f'{TRAIN_FOLDER}/{x}', os.listdir(TRAIN_FOLDER)[:1000]))
 
-        _, relations = self.parse_tracks(train_paths + [TEST_FILE])
+        _, relations = self.parse_tracks(train_paths + [INPUT_FILE])
 
         test_relations = dict()
         for i, pid in enumerate(self.test_pids):

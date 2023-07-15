@@ -3,7 +3,7 @@ from scipy.sparse import load_npz, vstack, csr_matrix
 import numpy as np
 from typing import Tuple, List, Dict
 from concurrent.futures import ProcessPoolExecutor
-from utils.constants import N_RECS, TEST_FILE, INFO_ROW
+from utils.constants import N_RECS, INPUT_FILE, INFO_ROW
 from utils.tools import coalesce, read_json, load_pickle, pop_empty
 import time
 
@@ -95,7 +95,7 @@ class PureSVDModel:
         del Rtrain
 
         # read test file, trackmap (track_uri -> col) and pidmap (pid -> row)
-        test = read_json(TEST_FILE)
+        test = read_json(INPUT_FILE)
         trackmap = load_pickle(self.trackmap_path)
         pidmap = load_pickle(self.test_path.replace('.npz', '.pickle'))
         pidmap = {row: pid for pid, row in pidmap.items()}      # invert pidmap
