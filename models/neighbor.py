@@ -5,20 +5,20 @@ import sys, time
 from utils.tools import coalesce, read_json, load_pickle
 from scipy.sparse import load_npz, save_npz, csr_matrix, vstack
 from scipy.sparse.linalg import norm
-from utils.constants import N_RECS, TEST_FILE, INFO_ROW
+from utils.constants import N_RECS, INFO_ROW, INPUT_FILE
 
-class NeighbourModel:
+class NeighborModel:
 
-    NAME = 'NeighbourModel'
+    NAME = 'NeighborModel'
 
-    def __init__(self, neighbour: str, k: int, train_path: str, test_path: str, trackmap_path):
+    def __init__(self, neighbor: str, k: int, train_path: str, test_path: str, trackmap_path):
         super().__init__()
         self.n_tracks = None
         self.Rtrain, self.Rtest = None, None
         self.Ntrain = None
         self.verbose, self.num_threads, self.batch_size = None, None, None
 
-        self.neighbour = neighbour
+        self.neighbor = neighbor
         self.k = k
         self.train_path = train_path
         self.test_path = test_path
@@ -27,13 +27,13 @@ class NeighbourModel:
 
     def recommend(self, submit_path: str, batch_size: int, num_threads: Tuple[int], matrix_path: str, load: bool, verbose: bool):
         """
-        Makes recommendation based on the neighbourhood selected (user or item).
+        Makes recommendation based on the neighborhood selected (user or item).
         :param batch_size: Number of rows that will be assumed by each thread to compute cosine similarity.
         :param num_threads: Tuple of integers. First integer is the number of threads used for matrix computation and
         second integer is the number of threads used for recommendation.
         :param submit_path: Path where submission will be stored.
         :param matrix_path: Path where estimated ratings matrix will be stored.
-        :param load: Boolean value to load the estimated ratings matrx in matrix_path.
+        :param load: Boolean value to load the estimated ratings matrix in matrix_path.
         """
         self.verbose = verbose
         self.num_threads = num_threads[0]
@@ -51,7 +51,7 @@ class NeighbourModel:
         del self.Rtrain, self.Rtest
 
         # read test file, trackmap (track_uri -> col) and pidmap (pid -> row)
-        test = read_json(TEST_FILE)
+        test = read_json(INPUT_FILE)
         trackmap = load_pickle(self.trackmap_path)
         pidmap = load_pickle(self.test_path.replace('.npz', '.pickle'))
 
@@ -94,9 +94,9 @@ class NeighbourModel:
                 file.write(f'{pid},' + ','.join(list(map(trackmap.get, popular))) + '\n')
 
     def compute_rating(self, save_matrix: str) -> csr_matrix:
-        if self.neighbour == 'user':
+        if self.neighbor == 'user':
             Rest = self.user_based()
-        elif self.neighbour == 'item':
+        elif self.neighbor == 'item':
             Rest = self.item_based()
         else:
             raise NotImplementedError
@@ -243,10 +243,10 @@ if __name__ == '__main__':
     train_path, test_path, trackmap_path = 'data/Rtrain.npz', 'data/Rtest.npz', 'data/trackmap.pickle'
 
     if sys.argv[1] == 'user':
-        model = NeighbourModel('user', 100, train_path, test_path, trackmap_path)
+        model = NeighborModel('user', 100, train_path, test_path, trackmap_path)
         batch_size = int(5e2)
     elif sys.argv[1] == 'item':
-        model = NeighbourModel('item', 50, train_path, test_path, trackmap_path)
+        model = NeighborModel('item', 50, train_path, test_path, trackmap_path)
         batch_size = int(10e3)
     else:
         raise NotImplementedError

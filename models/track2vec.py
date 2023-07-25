@@ -2,12 +2,22 @@ from gensim.models import Word2Vec
 from scipy.sparse import csr_matrix, load_npz, save_npz, vstack
 from utils.tools import tolist, load_pickle, read_json, pop_empty, coalesce
 from typing import List, Tuple, Dict
-from utils.constants import INPUT_FILE, N_RECS, MAX_THREADS, INFO_ROW
+from utils.constants import INPUT_FILE, N_RECS, MAX_THREADS, INFO_ROW, TRAIN_FOLDER
 import numpy as np
-import time
+import time, os
 from concurrent.futures import ProcessPoolExecutor
 from gensim.similarities.annoy import AnnoyIndexer
-from models.neighbour import recommend, csr_argsort
+from models.neighbor import recommend, csr_argsort
+
+
+def documentarize(files: List[str], trackmap: Dict[str, int], thread: int, verbose: bool) -> List[List[int]]:
+    info = lambda i: print(f'[Thread {thread}]: Reading file {i}/{len(files)}') if verbose else None
+    playlists = list()
+    for i, file in enumerate(files):
+        info(i)
+        playlists += [list(map(trackmap.get, tracks)) for tracks in read_json(file, funct=list).values()]
+    return playlists
+
 class Track2VecModel:
 
     """
@@ -60,12 +70,22 @@ class Track2VecModel:
         """
         if verbose:
             print('Training word2vec model with train playlists')
-        Rtrain = load_npz(self.train_path)
-        n_tracks = Rtrain.shape[1]
-        train_playlists = tolist(Rtrain)
-        del Rtrain
 
-        self.model = Word2Vec(sentences=[range(n_tracks)], vector_size=self.embed_dim, window=self.context_size, min_count=1, workers=num_threads)
+        # read files and trackmap
+        files = [f'{TRAIN_FOLDER}/{file}' for file in os.listdir(TRAIN_FOLDER)]
+        trackmap = load_pickle(self.trackmap_path)
+        train_playlists = list()
+        with ProcessPoolExecutor(max_workers=num_threads) as pool:
+            indexes = coalesce(len(files), num_threads)
+            futures = list()
+            for i in range(num_threads):
+                start, end = indexes[i], indexes[i+1]
+                futures.append(
+                   pool.submit(documentarize, files[start:end], trackmap, i, verbose)
+                )
+            for _ in range(len(futures)):
+                train_playlists += futures.pop(0).result()
+        self.model = Word2Vec(sentences=[range(len(trackmap))], vector_size=self.embed_dim, window=self.context_size, min_count=1, workers=num_threads)
         self.model.train(train_playlists, total_examples=len(train_playlists), epochs=num_epochs)
         self.model.save(self.model_path)
 
@@ -83,7 +103,7 @@ class Track2VecModel:
         if verbose:
             print('Computing pure item similarity for all tracks')
 
-        # embeds ~ [n_tracks, embed_dim]: MAtrix of embeddings
+        # embeds ~ [n_tracks, embed_dim]: Matrix of embeddings
         embeds = np.array([self.model.wv[track] for track in range(len(self.model.wv))])
         self.model = None
 
@@ -218,7 +238,8 @@ def pure_similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_n
     cols = np.argsort(-S, axis=1)[:, :k]
     values = S[[[i] for i in range(len(v))], cols.tolist()]
     rows = np.repeat(np.arange(b), k).flatten().tolist()
-    S = csr_matrix((values.flatten().tolist(), (rows, (cols.flatten() + i).tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
+    S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
+    print(S.shape)
     return S
 
 

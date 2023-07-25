@@ -37,7 +37,7 @@ def scenario(playlist: dict, scenario_type: int):
 
 
     input_playlist = playlist.copy()
-    input_playlist['tracks'] = input_playlist['tracks'][: min(cuts[scenario_type], len(playlist['tracks'])//3)]
+    input_playlist['tracks'] = input_playlist['tracks'][: min(cuts[scenario_type], len(playlist['tracks'])//4)]
     playlist['tracks'] = playlist['tracks'][len(input_playlist['tracks']):]
     return input_playlist, playlist
 
@@ -76,16 +76,14 @@ if __name__ == '__main__':
         for _ in range(len(futures)):
             test_playlists += futures.pop(0).result()
 
-    challenge = json.load(open(CHALLENGE_FILE, 'r'))
-    challenge['playlists'] = test_playlists
 
-    
     # shuffle test playlists
     np.random.shuffle(test_playlists)
     
     # mask some results given each scenario
     input_playlists, test_playlists = map(lambda x: sorted(x, key=lambda x: x['pid']), zip(*map(lambda x: scenario(x[1], (x[0]//(meval//scenarios))+1), enumerate(sorted(test_playlists, key=len)))))
-    
+
+    challenge = json.load(open(CHALLENGE_FILE, 'r'))
     challenge['playlists'] = test_playlists
     with open(GOLD_FILE, 'w') as handle:
         json.dump(challenge, handle, indent=4)

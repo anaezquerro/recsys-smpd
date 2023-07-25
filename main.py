@@ -5,7 +5,7 @@ from utils.evaluation import Evaluator
 from utils.tools import create_folder
 import time
 from utils.sparse import Sparse
-from models import BaselineModel, NeighbourModel, PureSVDModel, Track2VecModel
+from models import BaselineModel, NeighborModel, PureSVDModel, Track2VecModel
 
 
 def evaluator(args):
@@ -44,7 +44,7 @@ def base(args):
 
 
 
-def neighbour(args):
+def neighbor(args):
     # preprocess some arguments
     args.submit_path = args.submit_path if args.submit_path else f'submissions/{args.hood}.csv.gz'
     args.num_threads = (args.num_threads, args.num_threads) if len(args.num_threads) == 1 else args.num_threads[:2]
@@ -61,7 +61,7 @@ def neighbour(args):
 
     if 'recommend' in args.action:
         start = time.time()
-        model = NeighbourModel(args.hood, args.k,
+        model = NeighborModel(args.hood, args.k,
                                train_path=args.train_path, test_path=args.test_path, trackmap_path=args.trackmap_path)
         model.recommend(submit_path=args.submit_path, num_threads=args.num_threads, batch_size=args.batch_size,
                         matrix_path=args.matrix_path, load=args.load, verbose=args.verbose)
@@ -159,15 +159,15 @@ if __name__ == '__main__':
     baseline_parser = subparsers.add_parser('base', help='Baseline model based on popularity')
     eval_parser = subparsers.add_parser('eval', help='Evaluator model')
 
-    # add neighbour model arguments
-    neighbour_parser = subparsers.add_parser('neighbour', help='Neighbour model based on user and item similarity')
-    neighbour_parser.add_argument('hood', choices=['user', 'item'], default='user', type=str, help='neighbourhood to user')
-    neighbour_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*', default=['recommend'])
-    neighbour_parser.add_argument('--k', type=int, default=100)
-    neighbour_parser.add_argument('--batch_size', type=int, default=500)
-    neighbour_parser.add_argument('--matrix_path', type=str, default='data/Rest.npz')
-    neighbour_parser.add_argument('--load', action='store_true', default=False)
-    add_paths(neighbour_parser)
+    # add neighbor model arguments
+    neighbor_parser = subparsers.add_parser('neighbor', help='neighbor model based on user and item similarity')
+    neighbor_parser.add_argument('hood', choices=['user', 'item'], default='user', type=str, help='neighborhood to user')
+    neighbor_parser.add_argument('--action', choices=['sparsify', 'recommend'], type=str, nargs='*', default=['recommend'])
+    neighbor_parser.add_argument('--k', type=int, default=100)
+    neighbor_parser.add_argument('--batch_size', type=int, default=500)
+    neighbor_parser.add_argument('--matrix_path', type=str, default='data/Rest.npz')
+    neighbor_parser.add_argument('--load', action='store_true', default=False)
+    add_paths(neighbor_parser)
 
     # add puresvd arguments
     puresvd_parser = subparsers.add_parser('puresvd', help='PureSVD model')
@@ -185,25 +185,30 @@ if __name__ == '__main__':
     track2vec_parser.add_argument('action', choices=['train', 'recommend'], default='recommend', type=str, nargs='*', help='Action to perform')
     track2vec_parser.add_argument('--embed_dim', type=int, default=50, help='Vector size used in the space model')
     track2vec_parser.add_argument('--context_size', type=int, default=10, help='Context size used for training vector weights')
-    track2vec_parser.add_argument('--k', type=int, default=10, help='Neighbourhood size')
+    track2vec_parser.add_argument('--k', type=int, default=10, help='neighborhood size')
     track2vec_parser.add_argument('--model_path', type=str, default='data/track2vec', help='Path to store Gensim model')
     track2vec_parser.add_argument('--S_path', type=str, default='data/S-track2vec.npz')
     track2vec_parser.add_argument('--num_epochs', type=int, default=50, help='Number of epochs in training')
     track2vec_parser.add_argument('--num_trees', type=int, default=50, help='Number of trees for the Annoy Index')
-    track2vec_parser.add_argument('--annoy', action='store_true', help='Approximate nearest neighbours by cosine similarity')
+    track2vec_parser.add_argument('--annoy', action='store_true', help='Approximate nearest neighbors by cosine similarity')
     track2vec_parser.add_argument('--batch_size', type=int, default=100)
     add_paths(track2vec_parser)
 
 
-    for subparser in [eval_parser, baseline_parser, neighbour_parser, puresvd_parser, track2vec_parser]:
+    for subparser in [eval_parser, baseline_parser, neighbor_parser, puresvd_parser, track2vec_parser]:
         add_global(subparser)
 
     args, unknown = parser.parse_known_args()
 
+    if not os.path.exists(SUBMISSION_FOLDER):
+        os.makedirs(SUBMISSION_FOLDER)
+    if not os.path.exists('data/'):
+        os.makedirs('data/')
+
     if args.model == 'base':
         base(args)
-    elif args.model == 'neighbour':
-        neighbour(args)
+    elif args.model == 'neighbor':
+        neighbor(args)
     elif args.model == 'puresvd':
         puresvd(args)
     elif args.model == 'track2vec':
