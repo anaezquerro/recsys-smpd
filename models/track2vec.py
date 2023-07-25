@@ -239,7 +239,6 @@ def pure_similarity(i: int, batch_size: int, embeds: np.ndarray, k: int, track_n
     values = S[[[i] for i in range(len(v))], cols.tolist()]
     rows = np.repeat(np.arange(b), k).flatten().tolist()
     S = csr_matrix((values.flatten().tolist(), (rows, cols.flatten().tolist())), shape=(b, embeds.shape[0]), dtype=np.float32)
-    print(S.shape)
     return S
 
 

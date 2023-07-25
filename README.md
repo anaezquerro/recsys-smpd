@@ -94,7 +94,7 @@ Optionally, these parameters can be added to all models:
 
 In the following table we provide a summary of the parameters used and default values per model. Note that flags are preceded by a hyphen (-) and a blank cell means that parameter is not used by the model.
 
-| Parámetro       | `base`                    | `neighbor`                 | `puresvd`                               | `track2vec`                    |
+| Parameter       | `base`                    | `neighbor`                 | `puresvd`                               | `track2vec`                    |
 |-----------------|---------------------------|-----------------------------|-----------------------------------------|--------------------------------|
 | `submit_path`   | `submissions/base.csv.gz` | `submissions/{hood}.csv.gz` | `submissions/puresvd{ftest}-{h}.csv.gz` | `submissions/track2vec.csv.gz` |
 | `num_threads`   | `#proc`                   | `(8, #proc)`                | `#proc`                                 | `#proc`                        |
@@ -197,7 +197,7 @@ python3 main.py track2vec recommend -eval -v -t --num_threads 5 10 --k=20
 | puresvd' (h=50)         | 0.09        | 0.22 | 9.14   |
 | track2vec (d=100, k=20) | 0.02        | 0.07 | 14.36  |
 
-**Nota**: In `puresvd` the ' means that test matrix was used to factorize.
+**Note**: In `puresvd` the ' means that test matrix was used for factorization.
 
 
 ## Team builders :construction_worker:
