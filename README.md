@@ -11,7 +11,7 @@ Our approaches are highly outdated from the state-of-the-art in Recommender Syst
 Following the [submission format](https://www.aicrowd.com/challenges/spotify-million-playlist-dataset-challenge#submission-format) 
 of the challenge, we recommend 500 tracks based on a model with a given limitation: it is not permitted to suggest some 
 track that it is *already included* in a test playlist. You can find a detailed description of 
-each model in the [paper](recsys-spmd.pdf) attached to this repository.
+each model in the [paper](recsys-smpd.pdf) attached to this repository.
 
 ### Popularity baseline
 
